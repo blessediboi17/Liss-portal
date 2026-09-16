@@ -271,18 +271,15 @@ tbody tr:hover{background:var(--bg);}
 
 <script>
 /* =====================================================================
-   CONFIG — replace with your project's values from
-   Supabase Dashboard → Settings → API. The anon/public key is safe to
-   ship in client code; Row Level Security (see 02_rls_policies.sql)
-   is what actually protects the data.
+   CONFIG — Supabase Configuration
    ===================================================================== */
-const SUPABASE_URL = "jagvcumigbjxxhgcrada";       // e.g. "https://abcdEFGH.supabase.co"
+const SUPABASE_URL = "https://jagvcumigbjxxhgcrada.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ3ZjdW1pZ2JqeHhoZ2NyYWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDM5NzgsImV4cCI6MjEwNTExOTk3OH0.utCKuvaHnbyr8uYIvsn_UDTo4Ju0Msau-MlOAPoyXDI";
 
-const CONFIGURED = !jagvcumigbjxxhgcrada.startsWith("YOUR_") && !eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ3ZjdW1pZ2JqeHhoZ2NyYWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDM5NzgsImV4cCI6MjEwNTExOTk3OH0.utCKuvaHnbyr8uYIvsn_UDTo4Ju0Msau-MlOAPoyXDI.startsWith("YOUR_");
-const sb = CONFIGURED ? window.supabase.createClient(jagvcumigbjxxhgcrada, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ3ZjdW1pZ2JqeHhoZ2NyYWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDM5NzgsImV4cCI6MjEwNTExOTk3OH0.utCKuvaHnbyr8uYIvsn_UDTo4Ju0Msau-MlOAPoyXDI) : null;
-
-/* ===================== ICONS / NAV / ROLES ===================== */
+const CONFIGURED = SUPABASE_URL.includes("https://") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
+const sb = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  
+  /* ===================== ICONS / NAV / ROLES ===================== */
 const ICONS = {
   dashboard:'<path d="M3 12l9-9 9 9"/><path d="M9 21V12h6v9"/><path d="M5 10v11h14V10"/>',
   students:'<circle cx="12" cy="8" r="3.2"/><path d="M5 21c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/>',
