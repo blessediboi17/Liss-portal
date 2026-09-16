@@ -46,7 +46,7 @@ button,input,select,textarea{font-family:inherit; font-size:inherit; color:inher
 a{color:inherit;}
 .icon{width:19px;height:19px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
 
-/* ---------- Login ---------- */
+/* ---------- Auth Form ---------- */
 #login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; position:relative;}
 #login-screen::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg, var(--green-light) 0%, var(--bg) 42%); z-index:0;}
 .login-card{position:relative; z-index:1; width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:36px 32px 30px;}
@@ -66,7 +66,7 @@ a{color:inherit;}
 .btn-primary:hover{background:var(--green-deep);}
 .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--border);}
 .btn-ghost:hover{border-color:var(--green);}
-.login-foot{margin-top:16px; text-align:center;}
+.login-foot{margin-top:16px; text-align:center; display:flex; flex-direction:column; gap:8px;}
 .login-foot a{font-size:12.5px; color:var(--muted); text-decoration:none; cursor:pointer;}
 .login-foot a:hover{color:var(--green-deep); text-decoration:underline;}
 .login-error{background:var(--pink-light); color:var(--pink-deep); border-radius:6px; padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
@@ -213,24 +213,42 @@ tbody tr:hover{background:var(--bg);}
 </head>
 <body>
 
-<!-- ============ LOGIN ============ -->
+<!-- ============ AUTHENTICATION ============ -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-brand"><div class="mark">L</div><div class="word">LISS<small>Light International School System</small></div></div>
-    <h1>Sign in</h1>
-    <p class="sub">Enter your school account to continue.</p>
+    
+    <h1 id="auth-title">Sign in</h1>
+    <p class="sub" id="auth-sub">Enter your school account to continue.</p>
+    
     <div class="config-warning" id="config-warning">
       Add your Supabase project URL and anon key at the top of the script before this will connect to real data — see the CONFIG comment in the page source.
     </div>
     <div class="login-error" id="login-error"></div>
+    
+    <div class="field" id="name-field" style="display: none;">
+      <label for="li-name">Full Name</label>
+      <input id="li-name" type="text" placeholder="John Doe">
+    </div>
     <div class="field"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="you@liss.edu.lr" autocomplete="username"></div>
     <div class="field"><label for="li-pass">Password</label><input id="li-pass" type="password" placeholder="Password" autocomplete="current-password"></div>
-    <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Sign in</button>
-    
-    <!-- Temporary Sign Up Button -->
-    <button class="btn btn-ghost" id="signup-btn" onclick="doSignUp()" style="width: 100%; margin-top: 10px;">Create Account First</button>
+    <div class="field" id="role-field" style="display: none;">
+      <label for="li-role">Account Role</label>
+      <select id="li-role">
+        <option value="admin">Administrator</option>
+        <option value="teacher">Teacher</option>
+        <option value="accountant">Accountant</option>
+        <option value="parent">Parent</option>
+        <option value="student">Student</option>
+      </select>
+    </div>
 
-    <div class="login-foot"><a onclick="doForgotPassword()">Forgot password?</a></div>
+    <button class="btn btn-primary" id="auth-btn" onclick="handleAuthSubmit()">Sign in</button>
+
+    <div class="login-foot">
+      <a id="toggle-auth-link" onclick="toggleAuthMode()">Don't have an account? Sign up</a>
+      <a id="forgot-pass-link" onclick="doForgotPassword()">Forgot password?</a>
+    </div>
   </div>
 </div>
 
@@ -350,6 +368,7 @@ let schoolSettings = null;
 let currentYear = null;
 let currentPage = 'dashboard';
 let deferredInstallPrompt = null;
+let isSignUpMode = false;
 
 /* ===================== HELPERS ===================== */
 function $(id){ return document.getElementById(id); }
@@ -378,31 +397,105 @@ function fullName(s){ return [s.first_name, s.last_name].filter(Boolean).join(' 
 function loadingHtml(){ return `<div class="loading"><div class="spinner"></div><div>Loading…</div></div>`; }
 function emptyHtml(icon, text){ return `<div class="empty">${ic(icon)}<div>${text}</div></div>`; }
 
-/* ===================== AUTH ===================== */
+/* ===================== AUTH ROUTINE ===================== */
+function toggleAuthMode() {
+  isSignUpMode = !isSignUpMode;
+  $('login-error').classList.remove('show');
+  
+  if (isSignUpMode) {
+    $('auth-title').textContent = 'Create Account';
+    $('auth-sub').textContent = 'Register a new portal user account.';
+    $('auth-btn').textContent = 'Sign up';
+    $('name-field').style.display = 'block';
+    $('role-field').style.display = 'block';
+    $('toggle-auth-link').textContent = 'Already have an account? Sign in';
+    $('forgot-pass-link').style.display = 'none';
+  } else {
+    $('auth-title').textContent = 'Sign in';
+    $('auth-sub').textContent = 'Enter your school account to continue.';
+    $('auth-btn').textContent = 'Sign in';
+    $('name-field').style.display = 'none';
+    $('role-field').style.display = 'none';
+    $('toggle-auth-link').textContent = "Don't have an account? Sign up";
+    $('forgot-pass-link').style.display = 'inline-block';
+  }
+}
+
+async function handleAuthSubmit() {
+  if (isSignUpMode) {
+    await doSignUp();
+  } else {
+    await doLogin();
+  }
+}
+
 async function doSignUp(){
   if(!CONFIGURED){ toast('Add your Supabase URL and anon key first.'); return; }
+  
   const email = $('li-email').value.trim();
   const password = $('li-pass').value;
+  const fullName = $('li-name').value.trim();
+  const role = $('li-role').value;
   const errBox = $('login-error');
   errBox.classList.remove('show');
   
-  if(!email || !password){ 
-    errBox.textContent = 'Enter email and password above to create account.'; 
+  if(!email || !password || !fullName){ 
+    errBox.textContent = 'Please fill out all input fields.'; 
     errBox.classList.add('show'); 
     return; 
   }
   
-  const btn = $('signup-btn'); btn.disabled = true; btn.textContent = 'Creating account…';
-  const { data, error } = await sb.auth.signUp({ email, password });
-  btn.disabled = false; btn.textContent = 'Create Account First';
-  
+  const btn = $('auth-btn'); 
+  btn.disabled = true; 
+  btn.textContent = 'Creating account…';
+
+  // 1. Fetch available school ID to assign (defaults to first school found)
+  const { data: schoolData, error: schoolErr } = await sb.from('schools').select('id').limit(1).single();
+  let defaultSchoolId = schoolData ? schoolData.id : null;
+
+  // 2. Register user in Supabase Auth
+  const { data, error } = await sb.auth.signUp({ 
+    email, 
+    password,
+    options: {
+      data: { full_name: fullName, role: role }
+    }
+  });
+
   if(error){ 
+    btn.disabled = false; 
+    btn.textContent = 'Sign up';
     errBox.textContent = error.message; 
     errBox.classList.add('show'); 
     return; 
   }
-  
-  alert('Account created successfully! Click "Sign in" to log in.');
+
+  // 3. Create active application profile row in public.users table
+  if (data?.user) {
+    const { error: profileError } = await sb.from('users').insert({
+      id: data.user.id,
+      email: email,
+      full_name: fullName,
+      role: role,
+      status: 'active',
+      school_id: defaultSchoolId
+    });
+
+    if (profileError) {
+      console.warn("User auth account created, but table entry failed:", profileError.message);
+    }
+  }
+
+  btn.disabled = false; 
+  btn.textContent = 'Sign up';
+
+  if (data.session) {
+    session = data.session;
+    await afterLogin();
+  } else {
+    alert('Account created successfully! If confirmation is required, check your email, or click Sign In to continue.');
+    toggleAuthMode();
+  }
 }
 
 async function doLogin(){
@@ -412,13 +505,14 @@ async function doLogin(){
   const errBox = $('login-error');
   errBox.classList.remove('show');
   if(!email || !password){ errBox.textContent = 'Enter your email and password.'; errBox.classList.add('show'); return; }
-  const btn = $('login-btn'); btn.disabled = true; btn.textContent = 'Signing in…';
+  const btn = $('auth-btn'); btn.disabled = true; btn.textContent = 'Signing in…';
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   btn.disabled = false; btn.textContent = 'Sign in';
   if(error){ errBox.textContent = error.message; errBox.classList.add('show'); return; }
   session = data.session;
   await afterLogin();
 }
+
 async function doForgotPassword(){
   if(!CONFIGURED){ toast('Add your Supabase URL and anon key first.'); return; }
   const email = $('li-email').value.trim();
@@ -427,12 +521,14 @@ async function doForgotPassword(){
   if(error){ handleErr(error); return; }
   toast('Password reset email sent.');
 }
+
 async function doLogout(){
   if(sb) await sb.auth.signOut();
   session = null; profile = null; school = null; schoolSettings = null; currentYear = null;
   $('app').classList.remove('active');
   $('login-screen').style.display='flex';
 }
+
 async function afterLogin(){
   const { data: prof, error: profErr } = await sb.from('users').select('*').eq('id', session.user.id).single();
   if(profErr || !prof){
@@ -659,7 +755,7 @@ async function pageTeachers(){
   if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('teachers','Could not load teachers.'); return; }
   $('page-content').innerHTML = `
     <div class="toolbar"><div></div><div></div></div>
-    <div class="note" style="margin-bottom:14px;">New teacher accounts are created via Supabase Auth (invite/admin API) by an administrator, then linked here — that step isn't exposed in this client for security reasons.</div>
+    <div class="note" style="margin-bottom:14px;">New teacher accounts can register directly using Sign Up or be linked here by an administrator.</div>
     <div class="table-wrap"><table>
       <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
       <tbody>${(data||[]).map(t=>`<tr><td>${t.users?.full_name||'—'}</td><td>${t.users?.email||'—'}</td><td>${t.users?.phone||'—'}</td><td><span class="pill green">${t.employment_status}</span></td></tr>`).join('')||`<tr><td colspan="4" style="text-align:center;color:var(--muted);">No teachers yet</td></tr>`}</tbody>
@@ -1068,7 +1164,6 @@ async function pageUsers(){
   if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('users','Could not load users.'); return; }
   $('page-content').innerHTML = `
     <div class="toolbar"><div></div><div></div></div>
-    <div class="note" style="margin-bottom:14px;">New accounts are created via Supabase Auth (invite/admin API) — the anon-key client used here cannot create logins, only manage roles/status for people who already have one.</div>
     <div class="table-wrap"><table>
       <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
       <tbody>${(data||[]).map(u=>`<tr><td>${u.full_name}</td><td>${u.email||'—'}</td><td><span class="badge-role">${ROLE_LABELS[u.role]||u.role}</span></td><td><span class="pill green">${u.status}</span></td></tr>`).join('')}</tbody>
