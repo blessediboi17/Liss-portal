@@ -226,6 +226,10 @@ tbody tr:hover{background:var(--bg);}
     <div class="field"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="you@liss.edu.lr" autocomplete="username"></div>
     <div class="field"><label for="li-pass">Password</label><input id="li-pass" type="password" placeholder="Password" autocomplete="current-password"></div>
     <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Sign in</button>
+    
+    <!-- Temporary Sign Up Button -->
+    <button class="btn btn-ghost" id="signup-btn" onclick="doSignUp()" style="width: 100%; margin-top: 10px;">Create Account First</button>
+
     <div class="login-foot"><a onclick="doForgotPassword()">Forgot password?</a></div>
   </div>
 </div>
@@ -375,6 +379,32 @@ function loadingHtml(){ return `<div class="loading"><div class="spinner"></div>
 function emptyHtml(icon, text){ return `<div class="empty">${ic(icon)}<div>${text}</div></div>`; }
 
 /* ===================== AUTH ===================== */
+async function doSignUp(){
+  if(!CONFIGURED){ toast('Add your Supabase URL and anon key first.'); return; }
+  const email = $('li-email').value.trim();
+  const password = $('li-pass').value;
+  const errBox = $('login-error');
+  errBox.classList.remove('show');
+  
+  if(!email || !password){ 
+    errBox.textContent = 'Enter email and password above to create account.'; 
+    errBox.classList.add('show'); 
+    return; 
+  }
+  
+  const btn = $('signup-btn'); btn.disabled = true; btn.textContent = 'Creating account…';
+  const { data, error } = await sb.auth.signUp({ email, password });
+  btn.disabled = false; btn.textContent = 'Create Account First';
+  
+  if(error){ 
+    errBox.textContent = error.message; 
+    errBox.classList.add('show'); 
+    return; 
+  }
+  
+  alert('Account created successfully! Click "Sign in" to log in.');
+}
+
 async function doLogin(){
   if(!CONFIGURED){ toast('Add your Supabase URL and anon key first — see CONFIG at the top of the script.'); return; }
   const email = $('li-email').value.trim();
