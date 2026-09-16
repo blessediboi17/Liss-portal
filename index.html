@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LISS — Light International School System</title>
+<meta name="theme-color" content="#198754">
+<meta name="description" content="School management portal for Light International School System">
+
+<!-- ===== PWA ===== -->
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LISS">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --green:#198754; --green-deep:#146C43; --green-light:#EAF6EF;
+  --pink:#D96C8A; --pink-deep:#B94F6D; --pink-light:#FCEEF3;
+  --bg:#F8FAF9; --surface:#FFFFFF; --text:#202624; --muted:#6B7570; --border:#E1E7E4;
+  --radius:8px;
+  --sans:'Manrope',system-ui,-apple-system,sans-serif;
+  --serif:'Source Serif 4',Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#12160F; --surface:#191F19; --text:#EAF3EC; --muted:#93A093; --border:#2B342C;
+    --green-light:#16241C; --pink-light:#241820;
+  }
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--sans); background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased; min-height:100vh;
+}
+button,input,select,textarea{font-family:inherit; font-size:inherit; color:inherit;}
+a{color:inherit;}
+.icon{width:19px;height:19px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+/* ---------- Login ---------- */
+#login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; position:relative;}
+#login-screen::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg, var(--green-light) 0%, var(--bg) 42%); z-index:0;}
+.login-card{position:relative; z-index:1; width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:36px 32px 30px;}
+.login-brand{display:flex; align-items:center; gap:10px; margin-bottom:26px;}
+.login-brand .mark{width:38px;height:38px;border-radius:7px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--serif);font-weight:700;font-size:18px;}
+.login-brand .word{font-weight:800; font-size:18px; letter-spacing:-0.01em;}
+.login-brand .word small{display:block; font-weight:500; font-size:11.5px; color:var(--muted); letter-spacing:0.02em;}
+.login-card h1{font-family:var(--serif); font-size:22px; font-weight:600; margin:0 0 4px;}
+.login-card p.sub{color:var(--muted); font-size:13.5px; margin:0 0 22px;}
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--muted);}
+.field input, .field select, .field textarea{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--text);}
+.field input:focus, .field select:focus, .field textarea:focus, button:focus-visible{outline:2px solid var(--green); outline-offset:1px;}
+.btn{border:none; border-radius:6px; padding:10px 16px; font-weight:700; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; justify-content:center;}
+.btn[disabled]{opacity:0.6; cursor:default;}
+.btn-primary{background:var(--green); color:#fff; width:100%;}
+.btn-primary:hover{background:var(--green-deep);}
+.btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--green);}
+.login-foot{margin-top:16px; text-align:center;}
+.login-foot a{font-size:12.5px; color:var(--muted); text-decoration:none; cursor:pointer;}
+.login-foot a:hover{color:var(--green-deep); text-decoration:underline;}
+.login-error{background:var(--pink-light); color:var(--pink-deep); border-radius:6px; padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
+.login-error.show{display:block;}
+.config-warning{background:#FFF7E6; border:1px solid #F0C36D; color:#7A5A00; border-radius:6px; padding:10px 12px; font-size:12px; margin-bottom:16px; line-height:1.5;}
+@media (prefers-color-scheme: dark){.config-warning{background:#332a10; border-color:#7a5a00; color:#f0c36d;}}
+
+/* ---------- App shell ---------- */
+#app{display:none; min-height:100vh;}
+#app.active{display:flex;}
+.sidebar{width:230px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto;}
+.sidebar-brand{display:flex; align-items:center; gap:9px; padding:18px 18px 16px; border-bottom:1px solid var(--border);}
+.sidebar-brand .mark{width:30px;height:30px;border-radius:6px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--serif);font-weight:700;font-size:14px;}
+.sidebar-brand .word{font-weight:800; font-size:15px;}
+.nav-group{padding:12px 10px;}
+.nav-label{font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); padding:10px 10px 4px; font-weight:700;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:6px; color:var(--muted); text-decoration:none; font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:1px;}
+.nav-item:hover{background:var(--green-light); color:var(--text);}
+.nav-item.active{background:var(--green-light); color:var(--green-deep);}
+.nav-item .icon{width:17px;height:17px;}
+.sidebar-foot{margin-top:auto; padding:14px 16px; border-top:1px solid var(--border);}
+.who{display:flex; align-items:center; gap:9px; font-size:12.5px;}
+.who .av{width:28px;height:28px;border-radius:50%;background:var(--pink-light);color:var(--pink-deep);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11.5px;}
+.who .meta{flex:1; min-width:0;}
+.who .meta .name{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.who .meta .role{color:var(--muted); font-size:11px;}
+.logout-link{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); margin-top:10px; cursor:pointer; background:none; border:none; padding:0;}
+.logout-link:hover{color:var(--pink-deep);}
+.install-btn{display:none; align-items:center; gap:6px; font-size:12px; color:var(--green-deep); margin-top:10px; cursor:pointer; background:none; border:none; padding:0; font-weight:700;}
+.install-btn.show{display:flex;}
+
+.main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:14px 26px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:5;}
+.topbar h2{font-family:var(--serif); font-size:19px; margin:0; font-weight:600;}
+.topbar .right{display:flex; align-items:center; gap:14px;}
+.icon-btn{width:34px;height:34px;border-radius:7px; border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted);}
+.icon-btn:hover{color:var(--green-deep); border-color:var(--green);}
+.hamburger{display:none;}
+.content{padding:22px 26px 60px; flex:1;}
+
+.stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px;}
+.stat-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px 16px;}
+.stat-card .label{font-size:12px; color:var(--muted); font-weight:600; display:flex; align-items:center; gap:6px; margin-bottom:9px;}
+.stat-card .num{font-family:var(--serif); font-size:26px; font-weight:600;}
+.stat-card .num.pink{color:var(--pink-deep);}
+.stat-card .num.green{color:var(--green-deep);}
+
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:18px;}
+.panel-head{display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); gap:10px; flex-wrap:wrap;}
+.panel-head h3{margin:0; font-size:14.5px; font-weight:700;}
+.panel-body{padding:16px 18px;}
+.two-col{display:grid; grid-template-columns:1.4fr 1fr; gap:16px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+
+.activity{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px;}
+.activity:last-child{border-bottom:none;}
+.activity .dot{width:7px;height:7px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0;}
+.activity .when{color:var(--muted); font-size:11.5px;}
+
+.table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface);}
+table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:560px;}
+th{text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; color:var(--muted); padding:11px 14px; border-bottom:1px solid var(--border); font-weight:700; background:var(--bg);}
+td{padding:11px 14px; border-bottom:1px solid var(--border); vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--bg);}
+.pill{display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700;}
+.pill.green{background:var(--green-light); color:var(--green-deep);}
+.pill.pink{background:var(--pink-light); color:var(--pink-deep);}
+.pill.gray{background:var(--border); color:var(--muted);}
+.row-actions{display:flex; gap:6px;}
+.mini-btn{border:1px solid var(--border); background:var(--surface); border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted);}
+.mini-btn:hover{color:var(--green-deep); border-color:var(--green);}
+.mini-btn.danger:hover{color:var(--pink-deep); border-color:var(--pink);}
+.score-input{width:64px; padding:6px 8px; border:1px solid var(--border); border-radius:5px; background:var(--bg); text-align:center;}
+
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; justify-content:space-between;}
+.toolbar .filters{display:flex; flex-wrap:wrap; gap:8px;}
+.toolbar select, .toolbar input[type=text], .toolbar input[type=date]{padding:8px 10px; border:1px solid var(--border); border-radius:6px; background:var(--surface); font-size:13px;}
+.search-box{display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:6px; padding:7px 10px; background:var(--surface); min-width:180px;}
+.search-box input{border:none; background:none; flex:1; outline:none;}
+.search-box .icon{color:var(--muted);}
+
+.empty{text-align:center; padding:40px 20px; color:var(--muted);}
+.empty .icon{width:32px;height:32px; margin:0 auto 10px; display:block; color:var(--muted);}
+.loading{text-align:center; padding:40px 20px; color:var(--muted); font-size:13px;}
+.spinner{width:20px;height:20px;border:2.5px solid var(--border);border-top-color:var(--green);border-radius:50%;display:inline-block;animation:spin .7s linear infinite;margin-bottom:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.overlay{position:fixed; inset:0; background:rgba(20,24,20,0.42); display:none; align-items:center; justify-content:center; z-index:50; padding:20px;}
+.overlay.active{display:flex;}
+.modal{background:var(--surface); border-radius:var(--radius); width:100%; max-width:460px; max-height:88vh; overflow-y:auto; border:1px solid var(--border);}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border);}
+.modal-head h3{margin:0; font-size:15px; font-weight:700;}
+.modal-body{padding:18px;}
+.modal-foot{display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid var(--border);}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+.rc-wrap{max-width:720px; margin:0 auto;}
+.rc-doc{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:34px 36px;}
+.rc-head{display:flex; align-items:center; gap:14px; border-bottom:2px solid var(--green); padding-bottom:16px; margin-bottom:18px;}
+.rc-head .mark{width:52px;height:52px;border-radius:8px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--serif);font-weight:700;font-size:22px;flex-shrink:0;}
+.rc-head h1{font-family:var(--serif); font-size:19px; margin:0 0 2px; font-weight:700;}
+.rc-head p{margin:0; font-size:12px; color:var(--muted);}
+.rc-title{text-align:center; font-family:var(--serif); font-weight:600; font-size:15px; margin:0 0 18px; color:var(--green-deep);}
+.rc-meta{display:grid; grid-template-columns:1fr 1fr; gap:6px 22px; font-size:13px; margin-bottom:20px; padding:12px 14px; background:var(--bg); border-radius:6px;}
+.rc-meta div span{color:var(--muted);}
+.rc-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:16px;}
+.rc-table th{background:var(--green-light); color:var(--green-deep); padding:8px 8px; text-align:center; border:1px solid var(--border); font-weight:700;}
+.rc-table td{padding:7px 8px; text-align:center; border:1px solid var(--border);}
+.rc-table td:first-child{text-align:left; font-weight:600;}
+.rc-summary{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:22px;}
+.rc-summary .box{background:var(--pink-light); border-radius:6px; padding:12px; text-align:center;}
+.rc-summary .box .n{font-family:var(--serif); font-size:20px; font-weight:700; color:var(--pink-deep);}
+.rc-summary .box .l{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em; margin-top:2px;}
+.rc-sign{display:flex; justify-content:space-between; margin-top:30px; padding-top:14px;}
+.rc-sign div{text-align:center; font-size:11.5px; color:var(--muted); width:150px; border-top:1px solid var(--border); padding-top:6px;}
+.rc-actions{display:flex; gap:10px; justify-content:center; margin-top:18px;}
+
+@media print{
+  body *{visibility:hidden;}
+  #print-area, #print-area *{visibility:visible;}
+  #print-area{position:absolute; top:0; left:0; width:100%; padding:0; margin:0;}
+  .rc-doc{border:none; padding:0;}
+  .rc-actions{display:none;}
+}
+
+@media(max-width:880px){
+  .sidebar{position:fixed; left:-240px; top:0; z-index:40; transition:left .18s ease; width:220px;}
+  .sidebar.open{left:0; box-shadow:0 0 40px rgba(0,0,0,0.25);}
+  .hamburger{display:flex;}
+  .content{padding:16px 14px 60px;}
+  .topbar{padding:12px 14px;}
+  .two-col{grid-template-columns:1fr;}
+  .grid2{grid-template-columns:1fr;}
+  .rc-doc{padding:22px 18px;}
+  .rc-summary{grid-template-columns:1fr 1fr;}
+}
+.scrim{position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:35; display:none;}
+.scrim.active{display:block;}
+.badge-role{font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:12px; background:var(--green-light); color:var(--green-deep);}
+.note{font-size:12.5px; color:var(--muted); line-height:1.6; background:var(--bg); border:1px dashed var(--border); border-radius:6px; padding:10px 12px;}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#202624;color:#fff;padding:10px 18px;border-radius:7px;font-size:13px;z-index:80;box-shadow:0 6px 20px rgba(0,0,0,0.2);display:none;max-width:90vw;text-align:center;}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand"><div class="mark">L</div><div class="word">LISS<small>Light International School System</small></div></div>
+    <h1>Sign in</h1>
+    <p class="sub">Enter your school account to continue.</p>
+    <div class="config-warning" id="config-warning">
+      Add your Supabase project URL and anon key at the top of the script before this will connect to real data — see the CONFIG comment in the page source.
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <div class="field"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="you@liss.edu.lr" autocomplete="username"></div>
+    <div class="field"><label for="li-pass">Password</label><input id="li-pass" type="password" placeholder="Password" autocomplete="current-password"></div>
+    <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-foot"><a onclick="doForgotPassword()">Forgot password?</a></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="scrim" id="scrim" onclick="toggleSidebar(false)"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><div class="mark">L</div><div class="word">LISS</div></div>
+    <nav id="nav-content"></nav>
+    <div class="sidebar-foot">
+      <div class="who">
+        <div class="av" id="who-av">·</div>
+        <div class="meta"><div class="name" id="who-name">—</div><div class="role" id="who-role">—</div></div>
+      </div>
+      <button class="install-btn" id="install-btn" onclick="installApp()">
+        <svg class="icon" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+        Install app
+      </button>
+      <button class="logout-link" onclick="doLogout()">
+        <svg class="icon" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        Sign out
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="icon-btn hamburger" onclick="toggleSidebar()"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <h2 id="page-title">Dashboard</h2>
+      </div>
+      <div class="right">
+        <button class="icon-btn" title="Notifications"><svg class="icon" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+      </div>
+    </div>
+    <div class="content" id="page-content"><div class="loading"><div class="spinner"></div><div>Loading…</div></div></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-overlay"><div class="modal" id="modal-box"></div></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIG — replace with your project's values from
+   Supabase Dashboard → Settings → API. The anon/public key is safe to
+   ship in client code; Row Level Security (see 02_rls_policies.sql)
+   is what actually protects the data.
+   ===================================================================== */
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";       // e.g. "https://abcdEFGH.supabase.co"
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_PUBLIC_KEY";
+
+const CONFIGURED = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
+const sb = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ===================== ICONS / NAV / ROLES ===================== */
+const ICONS = {
+  dashboard:'<path d="M3 12l9-9 9 9"/><path d="M9 21V12h6v9"/><path d="M5 10v11h14V10"/>',
+  students:'<circle cx="12" cy="8" r="3.2"/><path d="M5 21c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/>',
+  teachers:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  classes:'<path d="M3 5h18M3 12h18M3 19h12"/>',
+  subjects:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M8 7h8M8 11h5"/>',
+  academic:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>',
+  results:'<path d="M18 20V10M12 20V4M6 20v-6"/>',
+  attendance:'<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+  fees:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.4 1.2-2 2.5-2s2.5.7 2.5 1.8-1 1.5-2.5 1.9-2.5 1-2.5 2 1.2 1.8 2.5 1.8 2.5-.6 2.5-2"/>',
+  announcements:'<path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5L6 9H5a2 2 0 0 0-2 2z"/><path d="M16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 2.8-6 6.5-6s6.5 2.5 6.5 6"/><path d="M17 8.5a2.8 2.8 0 1 1 0-5.6M21.5 20c0-2.8-1.9-5-4.7-5.7"/>',
+  reports:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 15l3-4 3 2.5L18 9"/>',
+  settings:'<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.5.7.9 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/>',
+  print:'<path d="M6 9V2h12v7"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v5h12v-5"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+  add:'<path d="M12 5v14M5 12h14"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  delete:'<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  chevron:'<path d="M9 18l6-6-6-6"/>'
+};
+function ic(name,cls){return `<svg class="icon ${cls||''}" viewBox="0 0 24 24">${ICONS[name]||''}</svg>`;}
+
+const NAV = [
+  {group:'General', items:[{id:'dashboard', label:'Dashboard', icon:'dashboard', roles:['admin','teacher','accountant','parent','student']}]},
+  {group:'School', items:[
+    {id:'students', label:'Students', icon:'students', roles:['admin','teacher']},
+    {id:'teachers', label:'Teachers', icon:'teachers', roles:['admin']},
+    {id:'classes', label:'Classes', icon:'classes', roles:['admin']},
+    {id:'subjects', label:'Subjects', icon:'subjects', roles:['admin']},
+    {id:'academic', label:'Academic Year', icon:'academic', roles:['admin']},
+  ]},
+  {group:'Academics', items:[
+    {id:'results', label:'Results', icon:'results', roles:['admin','teacher']},
+    {id:'reportcards', label:'Report Cards', icon:'reports', roles:['admin','teacher','parent','student']},
+    {id:'attendance', label:'Attendance', icon:'attendance', roles:['admin','teacher','parent','student']},
+  ]},
+  {group:'Operations', items:[
+    {id:'fees', label:'Fees', icon:'fees', roles:['admin','accountant','parent']},
+    {id:'announcements', label:'Announcements', icon:'announcements', roles:['admin','teacher','parent','student']},
+    {id:'users', label:'Users', icon:'users', roles:['admin']},
+  ]},
+  {group:'System', items:[{id:'settings', label:'Settings', icon:'settings', roles:['admin']}]}
+];
+const ROLE_LABELS = {super_admin:'Administrator', admin:'Administrator', teacher:'Teacher', accountant:'Accountant', parent:'Parent', student:'Student'};
+function effRole(role){ return role==='super_admin' ? 'admin' : role; }
+
+const DEFAULT_GRADING = [
+  {min:90,max:100,grade:'A',remark:'Excellent'},
+  {min:80,max:89,grade:'B',remark:'Very Good'},
+  {min:70,max:79,grade:'C',remark:'Good'},
+  {min:60,max:69,grade:'D',remark:'Fair'},
+  {min:50,max:59,grade:'E',remark:'Pass'},
+  {min:0,max:49,grade:'F',remark:'Fail'}
+];
+
+/* ===================== APP STATE ===================== */
+let session = null;      // supabase auth session
+let profile = null;      // row from `users`: {id, school_id, role, full_name, ...}
+let school = null;       // row from `schools`
+let schoolSettings = null; // row from `school_settings`
+let currentYear = null;  // current academic_years row
+let currentPage = 'dashboard';
+let deferredInstallPrompt = null;
+
+/* ===================== HELPERS ===================== */
+function $(id){ return document.getElementById(id); }
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(t._h); t._h = setTimeout(()=>t.style.display='none', 2600);
+}
+function handleErr(error, fallback){
+  console.error(error);
+  toast((error && error.message) ? error.message : (fallback || 'Something went wrong'));
+}
+function openModal(title, bodyHtml, footHtml){
+  $('modal-box').innerHTML = `
+    <div class="modal-head"><h3>${title}</h3><button class="icon-btn" onclick="closeModal()">${ic('x')}</button></div>
+    <div class="modal-body">${bodyHtml}</div>
+    ${footHtml?`<div class="modal-foot">${footHtml}</div>`:''}`;
+  $('modal-overlay').classList.add('active');
+}
+function closeModal(){ $('modal-overlay').classList.remove('active'); }
+function grading(){ return (schoolSettings && schoolSettings.grading_scale) || DEFAULT_GRADING; }
+function gradeFor(score){ for(const g of grading()){ if(score>=g.min && score<=g.max) return g; } return {grade:'-',remark:'-'}; }
+function round1(n){ return Math.round(n*10)/10; }
+function avg(arr){ const v=arr.filter(x=>typeof x==='number'); if(!v.length) return null; return v.reduce((a,b)=>a+b,0)/v.length; }
+function fullName(s){ return [s.first_name, s.last_name].filter(Boolean).join(' '); }
+function loadingHtml(){ return `<div class="loading"><div class="spinner"></div><div>Loading…</div></div>`; }
+function emptyHtml(icon, text){ return `<div class="empty">${ic(icon)}<div>${text}</div></div>`; }
+
+/* ===================== AUTH ===================== */
+async function doLogin(){
+  if(!CONFIGURED){ toast('Add your Supabase URL and anon key first — see CONFIG at the top of the script.'); return; }
+  const email = $('li-email').value.trim();
+  const password = $('li-pass').value;
+  const errBox = $('login-error');
+  errBox.classList.remove('show');
+  if(!email || !password){ errBox.textContent = 'Enter your email and password.'; errBox.classList.add('show'); return; }
+  const btn = $('login-btn'); btn.disabled = true; btn.textContent = 'Signing in…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if(error){ errBox.textContent = error.message; errBox.classList.add('show'); return; }
+  session = data.session;
+  await afterLogin();
+}
+async function doForgotPassword(){
+  if(!CONFIGURED){ toast('Add your Supabase URL and anon key first.'); return; }
+  const email = $('li-email').value.trim();
+  if(!email){ toast('Enter your email above first.'); return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  if(error){ handleErr(error); return; }
+  toast('Password reset email sent.');
+}
+async function doLogout(){
+  if(sb) await sb.auth.signOut();
+  session = null; profile = null; school = null; schoolSettings = null; currentYear = null;
+  $('app').classList.remove('active');
+  $('login-screen').style.display='flex';
+}
+async function afterLogin(){
+  // Load this person's profile row (role + school_id) — RLS lets a
+  // user always read their own `users` row.
+  const { data: prof, error: profErr } = await sb.from('users').select('*').eq('id', session.user.id).single();
+  if(profErr || !prof){
+    handleErr(profErr, 'Your account has no school profile yet. Ask an administrator to finish setting up your access.');
+    await sb.auth.signOut();
+    return;
+  }
+  profile = prof;
+  const [{ data: sc }, { data: settings }, { data: year }] = await Promise.all([
+    sb.from('schools').select('*').eq('id', profile.school_id).single(),
+    sb.from('school_settings').select('*').eq('school_id', profile.school_id).single(),
+    sb.from('academic_years').select('*').eq('school_id', profile.school_id).eq('is_current', true).single()
+  ]);
+  school = sc || null;
+  schoolSettings = settings || null;
+  currentYear = year || null;
+
+  $('login-screen').style.display='none';
+  $('app').classList.add('active');
+  route('dashboard');
+}
+
+/* ===================== SHELL / ROUTING ===================== */
+function toggleSidebar(force){
+  const open = force!==undefined ? force : !$('sidebar').classList.contains('open');
+  $('sidebar').classList.toggle('open', open);
+  $('scrim').classList.toggle('active', open);
+}
+async function route(page, param){
+  currentPage = page;
+  toggleSidebar(false);
+  renderNav();
+  const titles = {dashboard:'Dashboard', students:'Students', teachers:'Teachers', classes:'Classes', subjects:'Subjects',
+    academic:'Academic Year', results:'Results', reportcards:'Report Cards', reportcard:'Report Card', attendance:'Attendance',
+    fees:'Fees & Payments', announcements:'Announcements', users:'Users', settings:'Settings'};
+  $('page-title').textContent = titles[page] || 'LISS';
+  $('page-content').innerHTML = loadingHtml();
+  try{
+    const renderers = {
+      dashboard:pageDashboard, students:pageStudents, teachers:pageTeachers, classes:pageClasses, subjects:pageSubjects,
+      academic:pageAcademic, results:pageResults, reportcards:pageReportCards, reportcard:()=>pageReportCard(param),
+      attendance:pageAttendance, fees:pageFees, announcements:pageAnnouncements, users:pageUsers, settings:pageSettings
+    };
+    await (renderers[page]||pageDashboard)();
+  }catch(err){
+    handleErr(err);
+    $('page-content').innerHTML = emptyHtml('dashboard','Could not load this page. Check your connection and try again.');
+  }
+  window.scrollTo(0,0);
+}
+function renderNav(){
+  const role = effRole(profile.role);
+  let html = '';
+  NAV.forEach(g=>{
+    const items = g.items.filter(i=>i.roles.includes(role));
+    if(!items.length) return;
+    html += `<div class="nav-group"><div class="nav-label">${g.group}</div>`;
+    items.forEach(i=>{ html += `<div class="nav-item ${currentPage===i.id?'active':''}" onclick="route('${i.id}')">${ic(i.icon)}<span>${i.label}</span></div>`; });
+    html += `</div>`;
+  });
+  $('nav-content').innerHTML = html;
+  $('who-name').textContent = profile.full_name;
+  $('who-role').textContent = ROLE_LABELS[profile.role] || profile.role;
+  $('who-av').textContent = (profile.full_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('');
+}
+
+/* ===================== DASHBOARD ===================== */
+async function pageDashboard(){
+  const schoolId = profile.school_id;
+  const [{count:studentCount}, {count:teacherCount}, {count:classCount}] = await Promise.all([
+    sb.from('students').select('id',{count:'exact',head:true}).eq('school_id',schoolId).eq('status','active'),
+    sb.from('teachers').select('id',{count:'exact',head:true}).eq('school_id',schoolId),
+    sb.from('classes').select('id',{count:'exact',head:true}).eq('school_id',schoolId).eq('archived',false)
+  ]);
+  let outstanding = 0;
+  if(currentYear){
+    const [{data:feeTypes}, {data:payments}, {count:activeStudents}] = await Promise.all([
+      sb.from('fee_structures').select('*').eq('school_id',schoolId).eq('academic_year_id',currentYear.id),
+      sb.from('payments').select('amount, fee_structure_id').eq('school_id',schoolId),
+      sb.from('students').select('id',{count:'exact',head:true}).eq('school_id',schoolId).eq('status','active')
+    ]);
+    (feeTypes||[]).forEach(ft=>{
+      const due = (activeStudents||0) * Number(ft.amount);
+      const paid = (payments||[]).filter(p=>p.fee_structure_id===ft.id).reduce((a,p)=>a+Number(p.amount),0);
+      outstanding += Math.max(0, due - paid);
+    });
+  }
+  const { data: logs } = await sb.from('audit_logs').select('*').eq('school_id',schoolId).order('created_at',{ascending:false}).limit(6);
+
+  $('page-content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">${ic('students')} Students</div><div class="num green">${studentCount??0}</div></div>
+      <div class="stat-card"><div class="label">${ic('teachers')} Teachers</div><div class="num">${teacherCount??0}</div></div>
+      <div class="stat-card"><div class="label">${ic('classes')} Classes</div><div class="num">${classCount??0}</div></div>
+      <div class="stat-card"><div class="label">${ic('fees')} Outstanding fees</div><div class="num pink">$${outstanding.toLocaleString()}</div></div>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h3>Recent activity</h3></div>
+        <div class="panel-body">
+          ${(logs&&logs.length) ? logs.map(l=>`<div class="activity"><div class="dot"></div><div><div>${l.action.replace(/_/g,' ')} — ${l.entity_type}</div><div class="when">${new Date(l.created_at).toLocaleString()}</div></div></div>`).join('')
+            : `<div class="note">Activity will appear here as results are submitted, payments recorded, and students registered.</div>`}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Academic session</h3></div>
+        <div class="panel-body">
+          <div style="margin-bottom:12px;"><div style="font-size:12px;color:var(--muted);font-weight:600;">Academic year</div><div style="font-family:var(--serif);font-size:18px;font-weight:600;">${currentYear ? currentYear.name : '— not set —'}</div></div>
+          <div class="note">${currentYear ? 'Manage periods and semesters under Academic Year.' : 'No current academic year is set. An administrator should create one under Academic Year.'}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ===================== STUDENTS ===================== */
+let _classCache = null;
+async function getClasses(){
+  if(_classCache) return _classCache;
+  const { data, error } = await sb.from('classes').select('*').eq('school_id',profile.school_id).eq('archived',false).order('name');
+  if(error){ handleErr(error); return []; }
+  _classCache = data || [];
+  return _classCache;
+}
+async function pageStudents(){
+  const classes = await getClasses();
+  $('page-content').innerHTML = `
+    <div class="toolbar">
+      <div class="search-box">${ic('search')}<input id="stu-search" placeholder="Search students…" oninput="renderStudentTable()"></div>
+      <div class="filters">
+        <select id="stu-class-filter" onchange="renderStudentTable()"><option value="">All classes</option>${classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
+        <button class="btn btn-primary" onclick="openAddStudent()">${ic('add')} Add student</button>
+      </div>
+    </div>
+    <div id="stu-table-wrap">${loadingHtml()}</div>`;
+  await renderStudentTable();
+}
+async function renderStudentTable(){
+  const q = ($('stu-search')?.value||'').toLowerCase();
+  const classId = $('stu-class-filter')?.value||'';
+  let query = sb.from('students').select('*, classes(name)').eq('school_id',profile.school_id).order('last_name');
+  if(classId) query = query.eq('class_id', classId);
+  const { data, error } = await query;
+  const wrap = $('stu-table-wrap');
+  if(error){ handleErr(error); wrap.innerHTML = emptyHtml('students','Could not load students.'); return; }
+  const list = (data||[]).filter(s=> !q || fullName(s).toLowerCase().includes(q) || (s.student_no||'').toLowerCase().includes(q));
+  if(!list.length){ wrap.innerHTML = emptyHtml('students','No students match your search.'); return; }
+  wrap.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>Status</th><th></th></tr></thead>
+    <tbody>${list.map(s=>`
+      <tr>
+        <td>${s.student_no}</td><td>${fullName(s)}</td><td>${s.classes?.name||'—'}</td><td>${s.gender||'—'}</td>
+        <td><span class="pill ${s.status==='active'?'green':'gray'}">${s.status}</span></td>
+        <td><div class="row-actions">
+          <button class="mini-btn" title="Report card" onclick="route('reportcard','${s.id}')">${ic('reports')}</button>
+          <button class="mini-btn" title="Edit" onclick="openEditStudent('${s.id}')">${ic('edit')}</button>
+          <button class="mini-btn danger" title="Delete" onclick="deleteStudent('${s.id}')">${ic('delete')}</button>
+        </div></td>
+      </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+async function nextStudentNo(){
+  const { count } = await sb.from('students').select('id',{count:'exact',head:true}).eq('school_id',profile.school_id);
+  const yearPrefix = (currentYear?.name||'').split('/')[0]?.slice(-2) || new Date().getFullYear().toString().slice(-2);
+  return `STU-${yearPrefix}${String((count||0)+1).padStart(2,'0')}`;
+}
+async function openAddStudent(){
+  const classes = await getClasses();
+  openModal('Add student', `
+    <div class="grid2">
+      <div class="field"><label>First name</label><input id="f-first"></div>
+      <div class="field"><label>Last name</label><input id="f-last"></div>
+      <div class="field"><label>Gender</label><select id="f-gender"><option>Male</option><option>Female</option></select></div>
+      <div class="field"><label>Date of birth</label><input type="date" id="f-dob"></div>
+      <div class="field"><label>Class</label><select id="f-class">${classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></div>
+      <div class="field"><label>Status</label><select id="f-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="save-stu-btn" onclick="saveNewStudent()">Save student</button>`);
+}
+async function saveNewStudent(){
+  const first = $('f-first').value.trim(), last = $('f-last').value.trim();
+  if(!first || !last){ toast('Enter first and last name'); return; }
+  const btn = $('save-stu-btn'); btn.disabled = true;
+  const student_no = await nextStudentNo();
+  const { error } = await sb.from('students').insert({
+    school_id: profile.school_id, student_no, first_name:first, last_name:last,
+    gender: $('f-gender').value, dob: $('f-dob').value || null,
+    class_id: $('f-class').value || null, status: $('f-status').value
+  });
+  btn.disabled = false;
+  if(error){ handleErr(error); return; }
+  closeModal(); await renderStudentTable(); toast('Student added');
+}
+async function openEditStudent(id){
+  const classes = await getClasses();
+  const { data: s, error } = await sb.from('students').select('*').eq('id',id).single();
+  if(error){ handleErr(error); return; }
+  openModal('Edit student', `
+    <div class="grid2">
+      <div class="field"><label>First name</label><input id="f-first" value="${s.first_name}"></div>
+      <div class="field"><label>Last name</label><input id="f-last" value="${s.last_name}"></div>
+      <div class="field"><label>Class</label><select id="f-class">${classes.map(c=>`<option value="${c.id}" ${c.id===s.class_id?'selected':''}>${c.name}</option>`).join('')}</select></div>
+      <div class="field"><label>Status</label><select id="f-status"><option value="active" ${s.status==='active'?'selected':''}>Active</option><option value="inactive" ${s.status==='inactive'?'selected':''}>Inactive</option></select></div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditStudent('${id}')">Save changes</button>`);
+}
+async function saveEditStudent(id){
+  const { error } = await sb.from('students').update({
+    first_name: $('f-first').value.trim(), last_name: $('f-last').value.trim(),
+    class_id: $('f-class').value, status: $('f-status').value
+  }).eq('id', id);
+  if(error){ handleErr(error); return; }
+  closeModal(); await renderStudentTable(); toast('Student updated');
+}
+async function deleteStudent(id){
+  if(!confirm('Are you sure you want to delete this student?')) return;
+  const { error } = await sb.from('students').delete().eq('id', id);
+  if(error){ handleErr(error); return; }
+  await renderStudentTable(); toast('Student removed');
+}
+
+/* ===================== TEACHERS ===================== */
+async function pageTeachers(){
+  const { data, error } = await sb.from('teachers').select('*, users(full_name,email,phone)').eq('school_id',profile.school_id);
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('teachers','Could not load teachers.'); return; }
+  $('page-content').innerHTML = `
+    <div class="toolbar"><div></div><div></div></div>
+    <div class="note" style="margin-bottom:14px;">New teacher accounts are created via Supabase Auth (invite/admin API) by an administrator, then linked here — that step isn't exposed in this client for security reasons.</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
+      <tbody>${(data||[]).map(t=>`<tr><td>${t.users?.full_name||'—'}</td><td>${t.users?.email||'—'}</td><td>${t.users?.phone||'—'}</td><td><span class="pill green">${t.employment_status}</span></td></tr>`).join('')||`<tr><td colspan="4" style="text-align:center;color:var(--muted);">No teachers yet</td></tr>`}</tbody>
+    </table></div>`;
+}
+
+/* ===================== CLASSES ===================== */
+async function pageClasses(){
+  const [{data:classes, error}, {data:students}] = await Promise.all([
+    sb.from('classes').select('*, teachers(users(full_name))').eq('school_id',profile.school_id).order('name'),
+    sb.from('students').select('id, class_id').eq('school_id',profile.school_id).eq('status','active')
+  ]);
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('classes','Could not load classes.'); return; }
+  const counts = {};
+  (students||[]).forEach(s=>{ counts[s.class_id] = (counts[s.class_id]||0)+1; });
+  $('page-content').innerHTML = `
+    <div class="toolbar"><div></div><button class="btn btn-primary" onclick="toast('Add-class form: insert into classes for this school + current academic year')">${ic('add')} Add class</button></div>
+    <div class="stat-grid">
+      ${(classes||[]).map(c=>`
+        <div class="panel" style="margin-bottom:0;"><div class="panel-body">
+          <div style="font-family:var(--serif);font-weight:600;font-size:16px;margin-bottom:4px;">${c.name}</div>
+          <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">Class teacher: ${c.teachers?.users?.full_name || 'Unassigned'}</div>
+          <span class="pill green">${counts[c.id]||0} students</span>
+        </div></div>`).join('') || emptyHtml('classes','No classes yet.')}
+    </div>`;
+}
+
+/* ===================== SUBJECTS ===================== */
+async function pageSubjects(){
+  const [{data:subjects, error}, {data:links}] = await Promise.all([
+    sb.from('subjects').select('*').eq('school_id',profile.school_id).order('name'),
+    sb.from('class_subjects').select('subject_id, classes(name)')
+  ]);
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('subjects','Could not load subjects.'); return; }
+  const byId = {};
+  (links||[]).forEach(l=>{ (byId[l.subject_id] = byId[l.subject_id]||[]).push(l.classes?.name); });
+  $('page-content').innerHTML = `
+    <div class="toolbar"><div></div><button class="btn btn-primary" onclick="toast('Add-subject form: insert into subjects for this school')">${ic('add')} Add subject</button></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Subject</th><th>Assigned classes</th></tr></thead>
+      <tbody>${(subjects||[]).map(s=>`<tr><td>${s.name}</td><td>${(byId[s.id]||[]).join(', ')||'—'}</td></tr>`).join('')||`<tr><td colspan="2" style="text-align:center;color:var(--muted);">No subjects yet</td></tr>`}</tbody>
+    </table></div>`;
+}
+
+/* ===================== ACADEMIC YEAR ===================== */
+async function pageAcademic(){
+  const { data: years } = await sb.from('academic_years').select('*').eq('school_id',profile.school_id).order('name',{ascending:false});
+  let semHtml = '';
+  if(currentYear){
+    const { data: semesters } = await sb.from('semesters').select('*, periods(*)').eq('academic_year_id', currentYear.id).order('order_index');
+    (semesters||[]).forEach(sem=>{
+      const periods = (sem.periods||[]).sort((a,b)=>a.order_index-b.order_index);
+      semHtml += `<div><div style="font-weight:700;font-size:13px;margin-bottom:8px;color:${sem.order_index===1?'var(--green-deep)':'var(--pink-deep)'};">${sem.name}</div>
+        <div class="note" style="margin-bottom:0;">${periods.map(p=>p.name).join(' → ')||'No periods configured'}</div></div>`;
+    });
+  }
+  $('page-content').innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Academic years</h3><button class="btn btn-primary" onclick="toast('New-year form: insert into academic_years, then semesters + periods')">${ic('add')} New year</button></div>
+      <div class="panel-body">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Year</th><th>Status</th></tr></thead>
+          <tbody>${(years||[]).map(y=>`<tr><td>${y.name}</td><td><span class="pill ${y.is_current?'green':'gray'}">${y.is_current?'Current':'Archived'}</span></td></tr>`).join('')||`<tr><td colspan="2" style="text-align:center;color:var(--muted);">No academic years yet</td></tr>`}</tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Period structure — ${currentYear?currentYear.name:'no current year'}</h3></div>
+      <div class="panel-body">
+        ${currentYear ? `<div class="two-col">${semHtml}</div>
+        <div style="margin-top:14px;" class="note">Yearly average = (First Semester Final + Second Semester Final) ÷ 2. Semester final = period average × ${Math.round((schoolSettings?.period_weight??0.5)*100)}% + exam × ${Math.round((schoolSettings?.exam_weight??0.5)*100)}% — edit the weights in <code>school_settings</code>.</div>`
+        : emptyHtml('academic','Set a current academic year to see its period structure.')}
+      </div>
+    </div>`;
+}
+
+/* ===================== RESULTS ===================== */
+let _resultsCtx = { classSubjects: [], periods: [] };
+async function loadResultsContext(){
+  const role = effRole(profile.role);
+  let classSubjects;
+  if(role==='admin'){
+    const { data } = await sb.from('class_subjects').select('id, class_id, subject_id, classes(name), subjects(name)').order('id');
+    classSubjects = data || [];
+  } else {
+    const { data } = await sb.from('class_subjects').select('id, class_id, subject_id, classes(name), subjects(name)').eq('teacher_id', profile.id);
+    classSubjects = data || [];
+  }
+  let periods = [];
+  if(currentYear){
+    const { data: semesters } = await sb.from('semesters').select('*, periods(*)').eq('academic_year_id', currentYear.id).order('order_index');
+    (semesters||[]).forEach(sem=>{
+      (sem.periods||[]).sort((a,b)=>a.order_index-b.order_index).forEach(p=>periods.push({...p, semesterName:sem.name}));
+    });
+  }
+  _resultsCtx = { classSubjects, periods };
+}
+async function pageResults(){
+  await loadResultsContext();
+  const { classSubjects, periods } = _resultsCtx;
+  if(!classSubjects.length){ $('page-content').innerHTML = emptyHtml('results','No class/subject assignments found for you yet.'); return; }
+  if(!periods.length){ $('page-content').innerHTML = emptyHtml('results','No periods configured for the current academic year yet.'); return; }
+  const uniqueClasses = [...new Map(classSubjects.map(cs=>[cs.class_id, cs.classes.name])).entries()];
+  $('page-content').innerHTML = `
+    <div class="toolbar">
+      <div class="filters">
+        <select id="res-class" onchange="onResClassChange()">${uniqueClasses.map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}</select>
+        <select id="res-subject" onchange="renderResultsTable()"></select>
+        <select id="res-period" onchange="renderResultsTable()">${periods.map(p=>`<option value="${p.id}">${p.semesterName} — ${p.name}</option>`).join('')}</select>
+      </div>
+      <div class="filters">
+        <button class="btn btn-ghost" onclick="saveResults(false)">Save draft</button>
+        <button class="btn btn-primary" onclick="saveResults(true)">Submit results</button>
+      </div>
+    </div>
+    <div id="res-table-wrap">${loadingHtml()}</div>
+    <div class="note" style="margin-top:12px;">Scores are validated 0–100 before submission. Submitted results are locked for teachers; an administrator can reopen a period for correction.</div>`;
+  onResClassChange();
+}
+function onResClassChange(){
+  const classId = $('res-class').value;
+  const subjSel = $('res-subject');
+  const subs = _resultsCtx.classSubjects.filter(cs=>cs.class_id===classId);
+  subjSel.innerHTML = subs.map(cs=>`<option value="${cs.subject_id}">${cs.subjects.name}</option>`).join('');
+  renderResultsTable();
+}
+async function renderResultsTable(){
+  const classId = $('res-class').value, subjectId = $('res-subject').value, periodId = $('res-period').value;
+  const wrap = $('res-table-wrap');
+  wrap.innerHTML = loadingHtml();
+  const [{ data: roster, error: rErr }, { data: scores, error: sErr }] = await Promise.all([
+    sb.from('students').select('id, first_name, last_name').eq('class_id', classId).eq('status','active').order('last_name'),
+    sb.from('scores').select('*').eq('class_id', classId).eq('subject_id', subjectId).eq('period_id', periodId)
+  ]);
+  if(rErr || sErr){ handleErr(rErr||sErr); wrap.innerHTML = emptyHtml('results','Could not load results.'); return; }
+  if(!roster || !roster.length){ wrap.innerHTML = emptyHtml('students','No students enrolled in this class.'); return; }
+  const byStudent = {}; (scores||[]).forEach(s=>{ byStudent[s.student_id] = s; });
+  window._resDraft = window._resDraft || {};
+  wrap.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Student</th><th>Score</th><th>Grade</th><th>Status</th></tr></thead>
+    <tbody>${roster.map(s=>{
+      const existing = byStudent[s.id];
+      const submitted = existing && existing.status==='submitted';
+      const val = existing ? existing.score : '';
+      const g = (val!=='' && val!=null) ? gradeFor(Number(val)) : {grade:'-'};
+      return `<tr>
+        <td>${fullName(s)}</td>
+        <td><input class="score-input" type="number" min="0" max="100" value="${val}" ${submitted?'disabled':''} data-student="${s.id}" onchange="markDraft('${s.id}', this.value)"></td>
+        <td>${g.grade}</td>
+        <td><span class="pill ${submitted?'green':'gray'}">${submitted?'Submitted':'Draft'}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+function markDraft(studentId, value){
+  value = value===''? null : Math.max(0, Math.min(100, Number(value)));
+  window._resDraft[studentId] = value;
+}
+async function saveResults(submit){
+  const classId = $('res-class').value, subjectId = $('res-subject').value, periodId = $('res-period').value;
+  const rows = Object.keys(window._resDraft||{});
+  if(!rows.length){ toast('Enter at least one score first'); return; }
+  for(const sid of rows){ if(window._resDraft[sid]==null){ toast('Enter all scores before saving'); return; } }
+  const upsertRows = rows.map(sid=>({
+    school_id: profile.school_id, student_id: sid, class_id: classId, subject_id: subjectId,
+    period_id: periodId, academic_year_id: currentYear.id, score: window._resDraft[sid],
+    status: submit ? 'submitted' : 'draft',
+    submitted_by: submit ? profile.id : null, submitted_at: submit ? new Date().toISOString() : null
+  }));
+  const { error } = await sb.from('scores').upsert(upsertRows, { onConflict: 'student_id,subject_id,period_id' });
+  if(error){ handleErr(error); return; }
+  window._resDraft = {};
+  await renderResultsTable();
+  toast(submit ? 'Results submitted' : 'Draft saved');
+}
+
+/* ===================== REPORT CARDS ===================== */
+async function pageReportCards(){
+  const { data, error } = await sb.from('students').select('id, first_name, last_name, classes(name)').eq('school_id',profile.school_id).order('last_name');
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('reports','Could not load students.'); return; }
+  $('page-content').innerHTML = `
+    <div class="toolbar"><div class="search-box">${ic('search')}<input id="rc-search" placeholder="Search students…" oninput="filterRCList()"></div></div>
+    <div id="rc-list-wrap"></div>`;
+  window._rcList = data || [];
+  filterRCList();
+}
+function filterRCList(){
+  const q = ($('rc-search')?.value||'').toLowerCase();
+  const list = (window._rcList||[]).filter(s=>!q || fullName(s).toLowerCase().includes(q));
+  $('rc-list-wrap').innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Student</th><th>Class</th><th></th></tr></thead>
+    <tbody>${list.map(s=>`<tr><td>${fullName(s)}</td><td>${s.classes?.name||'—'}</td><td><button class="btn btn-ghost" onclick="route('reportcard','${s.id}')">${ic('reports')} View report card</button></td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+async function pageReportCard(studentId){
+  if(!studentId){ route('reportcards'); return; }
+  const { data: s, error } = await sb.from('students').select('*, classes(id,name)').eq('id', studentId).single();
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('reports','Could not load this student.'); return; }
+  const { data: classSubjects } = await sb.from('class_subjects').select('subject_id, subjects(name)').eq('class_id', s.class_id);
+  const { data: scores } = await sb.from('scores').select('*, periods(name, kind, order_index, semesters(order_index))').eq('student_id', studentId);
+
+  const pWeight = schoolSettings?.period_weight ?? 0.5, eWeight = schoolSettings?.exam_weight ?? 0.5;
+  function computeSubject(subjectId){
+    const rows = (scores||[]).filter(r=>r.subject_id===subjectId);
+    const bySem = {1:{periods:[],exam:null}, 2:{periods:[],exam:null}};
+    rows.forEach(r=>{
+      const semOrder = r.periods?.semesters?.order_index;
+      if(!semOrder) return;
+      if(r.periods.kind==='semester_exam') bySem[semOrder].exam = r.score;
+      else bySem[semOrder].periods.push(r.score);
+    });
+    const s1avg = avg(bySem[1].periods), s1final = (s1avg!=null && bySem[1].exam!=null) ? (s1avg*pWeight + Number(bySem[1].exam)*eWeight) : s1avg;
+    const s2avg = avg(bySem[2].periods), s2final = (s2avg!=null && bySem[2].exam!=null) ? (s2avg*pWeight + Number(bySem[2].exam)*eWeight) : s2avg;
+    const yearly = avg([s1final, s2final]);
+    return { bySem, s1final, s2final, yearly };
+  }
+  let yearlyAll = [];
+  const rows = (classSubjects||[]).map(cs=>{
+    const r = computeSubject(cs.subject_id);
+    if(r.yearly!=null) yearlyAll.push(r.yearly);
+    const g = gradeFor(Math.round(r.yearly ?? r.s1final ?? 0));
+    return { name: cs.subjects.name, r, g };
+  });
+  const overallYearly = yearlyAll.length ? round1(avg(yearlyAll)) : null;
+  const overallGrade = overallYearly!=null ? gradeFor(Math.round(overallYearly)) : {grade:'-',remark:'—'};
+  const d = v => (v==null ? '—' : v);
+
+  $('page-content').innerHTML = `
+  <div class="rc-wrap"><div id="print-area"><div class="rc-doc">
+    <div class="rc-head">
+      <div class="mark">${(school?.name||'LISS').split(' ').map(w=>w[0]).slice(0,3).join('')}</div>
+      <div><h1>${school?.name||'—'}</h1><p>${school?.address||''} · ${school?.phone||''} · ${school?.email||''}</p></div>
+    </div>
+    <p class="rc-title">Student Report Card — ${currentYear?currentYear.name:''}</p>
+    <div class="rc-meta">
+      <div>Name <span>${fullName(s)}</span></div>
+      <div>Student ID <span>${s.student_no}</span></div>
+      <div>Class <span>${s.classes?.name||'—'}</span></div>
+      <div>Gender <span>${s.gender||'—'}</span></div>
+      <div>Principal <span>${school?.principal_name||'—'}</span></div>
+      <div>Admission date <span>${s.admission_date||'—'}</span></div>
+    </div>
+    <table class="rc-table">
+      <thead><tr><th rowspan="2" style="vertical-align:middle;">Subject</th><th colspan="4">First Semester</th><th colspan="4">Second Semester</th><th rowspan="2" style="vertical-align:middle;">Yearly Avg</th><th rowspan="2" style="vertical-align:middle;">Grade</th></tr>
+      <tr><th>1st</th><th>2nd</th><th>3rd</th><th>Exam</th><th>4th</th><th>5th</th><th>6th</th><th>Exam</th></tr></thead>
+      <tbody>${rows.map(row=>{
+        const p1=row.r.bySem[1].periods, p2=row.r.bySem[2].periods;
+        return `<tr><td>${row.name}</td>
+          <td>${d(p1[0])}</td><td>${d(p1[1])}</td><td>${d(p1[2])}</td><td>${d(row.r.bySem[1].exam)}</td>
+          <td>${d(p2[0])}</td><td>${d(p2[1])}</td><td>${d(p2[2])}</td><td>${d(row.r.bySem[2].exam)}</td>
+          <td>${row.r.yearly!=null?round1(row.r.yearly):'—'}</td><td>${row.g.grade}</td></tr>`;
+      }).join('') || `<tr><td colspan="11" style="text-align:center;color:var(--muted);">No subjects assigned to this class yet</td></tr>`}</tbody>
+    </table>
+    <div class="rc-summary">
+      <div class="box"><div class="n">${overallYearly!=null?overallYearly:'—'}</div><div class="l">Yearly average</div></div>
+      <div class="box"><div class="n">${overallGrade.grade}</div><div class="l">Overall grade</div></div>
+      <div class="box"><div class="n">${overallGrade.remark}</div><div class="l">Remark</div></div>
+    </div>
+    <div class="rc-sign"><div>Class Teacher</div><div>Principal</div><div>Parent / Guardian</div></div>
+  </div></div>
+  <div class="rc-actions">
+    <button class="btn btn-ghost" onclick="route('reportcards')">${ic('chevron')} Back</button>
+    <button class="btn btn-ghost" onclick="window.print()">${ic('print')} Print</button>
+    <button class="btn btn-primary" onclick="window.print()">${ic('download')} Download PDF</button>
+  </div></div>`;
+}
+
+/* ===================== ATTENDANCE ===================== */
+async function pageAttendance(){
+  const classes = await getClasses();
+  if(!classes.length){ $('page-content').innerHTML = emptyHtml('attendance','No classes yet.'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  $('page-content').innerHTML = `
+    <div class="toolbar">
+      <div class="filters">
+        <select id="att-class" onchange="renderAttendance()">${classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
+        <input type="date" id="att-date" value="${today}" onchange="renderAttendance()">
+      </div>
+      <button class="btn btn-primary" onclick="saveAttendance()">Save attendance</button>
+    </div>
+    <div id="att-table-wrap">${loadingHtml()}</div>`;
+  renderAttendance();
+}
+async function renderAttendance(){
+  const classId = $('att-class').value, date = $('att-date').value;
+  const wrap = $('att-table-wrap'); wrap.innerHTML = loadingHtml();
+  const [{data:roster, error:rErr}, {data:existing, error:eErr}] = await Promise.all([
+    sb.from('students').select('id,first_name,last_name').eq('class_id',classId).eq('status','active').order('last_name'),
+    sb.from('attendance').select('*').eq('class_id',classId).eq('date',date)
+  ]);
+  if(rErr||eErr){ handleErr(rErr||eErr); wrap.innerHTML = emptyHtml('attendance','Could not load attendance.'); return; }
+  const byStudent = {}; (existing||[]).forEach(a=>byStudent[a.student_id]=a.status);
+  window._attDraft = {...byStudent};
+  wrap.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Student</th><th>Present</th><th>Absent</th><th>Late</th></tr></thead>
+    <tbody>${(roster||[]).map(s=>{
+      const v = byStudent[s.id] || 'present';
+      return `<tr><td>${fullName(s)}</td>${['present','absent','late'].map(opt=>`<td style="text-align:center;"><input type="radio" name="att-${s.id}" ${v===opt?'checked':''} onchange="window._attDraft['${s.id}']='${opt}'"></td>`).join('')}</tr>`;
+    }).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--muted);">No students in this class</td></tr>`}</tbody>
+  </table></div>`;
+}
+async function saveAttendance(){
+  const classId = $('att-class').value, date = $('att-date').value;
+  const rows = Object.entries(window._attDraft||{}).map(([student_id,status])=>({
+    school_id: profile.school_id, student_id, class_id: classId, date, status, recorded_by: profile.id
+  }));
+  if(!rows.length){ toast('Nothing to save'); return; }
+  const { error } = await sb.from('attendance').upsert(rows, { onConflict: 'student_id,date' });
+  if(error){ handleErr(error); return; }
+  toast('Attendance saved');
+}
+
+/* ===================== FEES ===================== */
+async function pageFees(){
+  const schoolId = profile.school_id;
+  const [{data:feeTypes,error:e1}, {data:payments,error:e2}] = await Promise.all([
+    sb.from('fee_structures').select('*').eq('school_id',schoolId),
+    sb.from('payments').select('*, students(first_name,last_name,student_no), receipts(receipt_no)').eq('school_id',schoolId).order('created_at',{ascending:false})
+  ]);
+  if(e1||e2){ handleErr(e1||e2); $('page-content').innerHTML = emptyHtml('fees','Could not load fees.'); return; }
+  const total = (payments||[]).reduce((a,p)=>a+Number(p.amount),0);
+  window._feeTypes = feeTypes||[];
+  $('page-content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">${ic('fees')} Total collected</div><div class="num green">$${total.toLocaleString()}</div></div>
+      <div class="stat-card"><div class="label">${ic('fees')} Fee types</div><div class="num">${(feeTypes||[]).length}</div></div>
+      <div class="stat-card"><div class="label">${ic('fees')} Payments recorded</div><div class="num">${(payments||[]).length}</div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><h3>Fee types</h3></div>
+      <div class="panel-body" style="padding:0;"><div class="table-wrap" style="border:none;"><table>
+        <thead><tr><th>Type</th><th>Amount</th></tr></thead>
+        <tbody>${(feeTypes||[]).map(f=>`<tr><td>${f.name}</td><td>$${f.amount}</td></tr>`).join('')||`<tr><td colspan="2" style="text-align:center;color:var(--muted);">No fee types yet</td></tr>`}</tbody>
+      </table></div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><h3>Payments</h3><button class="btn btn-primary" onclick="openRecordPayment()">${ic('add')} Record payment</button></div>
+      <div class="panel-body" style="padding:0;"><div class="table-wrap" style="border:none;"><table>
+        <thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>${(payments||[]).map(p=>`<tr><td>${p.receipts?.[0]?.receipt_no||'—'}</td><td>${p.students?fullName(p.students):p.student_id}</td><td>$${p.amount}</td><td>${p.payment_date}</td></tr>`).join('')||`<tr><td colspan="4" style="text-align:center;color:var(--muted);">No payments yet</td></tr>`}</tbody>
+      </table></div></div>
+    </div>`;
+}
+async function openRecordPayment(){
+  const { data: students } = await sb.from('students').select('id, first_name, last_name, student_no').eq('school_id',profile.school_id).order('last_name');
+  openModal('Record payment', `
+    <div class="field"><label>Student</label><select id="p-student">${(students||[]).map(s=>`<option value="${s.id}">${fullName(s)} — ${s.student_no}</option>`).join('')}</select></div>
+    <div class="field"><label>Fee type</label><select id="p-type">${(window._feeTypes||[]).map(f=>`<option value="${f.id}">${f.name}</option>`).join('')}</select></div>
+    <div class="field"><label>Amount ($)</label><input type="number" id="p-amount" min="0"></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="save-pay-btn" onclick="saveNewPayment()">Save & generate receipt</button>`);
+}
+async function saveNewPayment(){
+  const amt = Number($('p-amount').value);
+  if(!amt || amt<=0){ toast('Enter a valid amount'); return; }
+  const btn = $('save-pay-btn'); btn.disabled = true;
+  const { data: payment, error } = await sb.from('payments').insert({
+    school_id: profile.school_id, student_id: $('p-student').value, fee_structure_id: $('p-type').value,
+    amount: amt, payment_date: new Date().toISOString().slice(0,10), recorded_by: profile.id
+  }).select().single();
+  if(error){ handleErr(error); btn.disabled=false; return; }
+  const receipt_no = 'RCT-' + Date.now().toString().slice(-8);
+  const { error: rErr } = await sb.from('receipts').insert({ payment_id: payment.id, receipt_no });
+  if(rErr) handleErr(rErr);
+  closeModal(); await pageFees(); toast('Payment recorded — ' + receipt_no);
+}
+
+/* ===================== ANNOUNCEMENTS ===================== */
+async function pageAnnouncements(){
+  const { data, error } = await sb.from('announcements').select('*, users(full_name)').eq('school_id',profile.school_id).order('posted_at',{ascending:false});
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('announcements','Could not load announcements.'); return; }
+  const canPost = ['admin','teacher'].includes(effRole(profile.role));
+  $('page-content').innerHTML = `
+    <div class="toolbar"><div></div>${canPost?`<button class="btn btn-primary" onclick="openNewAnnouncement()">${ic('add')} New announcement</button>`:''}</div>
+    ${(data||[]).map(a=>`<div class="panel"><div class="panel-body">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+        <div style="font-weight:700;font-size:14.5px;">${a.title}</div><span class="pill pink">${a.audience}</span>
+      </div>
+      <div style="font-size:13px;margin-bottom:6px;line-height:1.55;">${a.message}</div>
+      <div style="font-size:11.5px;color:var(--muted);">${new Date(a.posted_at).toLocaleDateString()} · ${a.users?.full_name||''}</div>
+    </div></div>`).join('') || emptyHtml('announcements','No announcements yet.')}`;
+}
+async function openNewAnnouncement(){
+  const classes = await getClasses();
+  openModal('New announcement', `
+    <div class="field"><label>Title</label><input id="a-title"></div>
+    <div class="field"><label>Message</label><textarea id="a-message" rows="4"></textarea></div>
+    <div class="field"><label>Audience</label><select id="a-audience" onchange="document.getElementById('a-class-wrap').style.display=this.value==='class'?'block':'none'">
+      <option value="everyone">Everyone</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option><option value="class">Specific class</option>
+    </select></div>
+    <div class="field" id="a-class-wrap" style="display:none;"><label>Class</label><select id="a-class">${classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAnnouncement()">Publish</button>`);
+}
+async function saveAnnouncement(){
+  const title = $('a-title').value.trim();
+  if(!title){ toast('Enter a title'); return; }
+  const audience = $('a-audience').value;
+  const { error } = await sb.from('announcements').insert({
+    school_id: profile.school_id, title, message: $('a-message').value, audience,
+    class_id: audience==='class' ? $('a-class').value : null, posted_by: profile.id
+  });
+  if(error){ handleErr(error); return; }
+  closeModal(); await pageAnnouncements(); toast('Announcement published');
+}
+
+/* ===================== USERS ===================== */
+async function pageUsers(){
+  const { data, error } = await sb.from('users').select('*').eq('school_id',profile.school_id).order('full_name');
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('users','Could not load users.'); return; }
+  $('page-content').innerHTML = `
+    <div class="toolbar"><div></div><div></div></div>
+    <div class="note" style="margin-bottom:14px;">New accounts are created via Supabase Auth (invite/admin API) — the anon-key client used here cannot create logins, only manage roles/status for people who already have one.</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+      <tbody>${(data||[]).map(u=>`<tr><td>${u.full_name}</td><td>${u.email||'—'}</td><td><span class="badge-role">${ROLE_LABELS[u.role]||u.role}</span></td><td><span class="pill green">${u.status}</span></td></tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+/* ===================== SETTINGS ===================== */
+async function pageSettings(){
+  const sc = school || {};
+  $('page-content').innerHTML = `
+    <div class="panel"><div class="panel-head"><h3>School information</h3></div>
+      <div class="panel-body">
+        <div class="grid2">
+          <div class="field"><label>School name</label><input id="set-name" value="${sc.name||''}"></div>
+          <div class="field"><label>Motto</label><input id="set-motto" value="${sc.motto||''}"></div>
+          <div class="field"><label>Address</label><input id="set-address" value="${sc.address||''}"></div>
+          <div class="field"><label>Phone</label><input id="set-phone" value="${sc.phone||''}"></div>
+          <div class="field"><label>Email</label><input id="set-email" value="${sc.email||''}"></div>
+          <div class="field"><label>Principal / Head</label><input id="set-principal" value="${sc.principal_name||''}"></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveSchoolSettings()">Save changes</button>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-head"><h3>Grading scale</h3></div>
+      <div class="panel-body" style="padding:0;"><div class="table-wrap" style="border:none;"><table>
+        <thead><tr><th>Range</th><th>Grade</th><th>Remark</th></tr></thead>
+        <tbody>${grading().map(g=>`<tr><td>${g.min}–${g.max}</td><td>${g.grade}</td><td>${g.remark}</td></tr>`).join('')}</tbody>
+      </table></div></div>
+      <div class="panel-body"><div class="note">Showing the default scale. To make this editable, add a <code>grading_scale jsonb</code> column to <code>school_settings</code> and store an array of {min,max,grade,remark} — the app already reads that column when present.</div></div>
+    </div>`;
+}
+async function saveSchoolSettings(){
+  const { error } = await sb.from('schools').update({
+    name: $('set-name').value, motto: $('set-motto').value, address: $('set-address').value,
+    phone: $('set-phone').value, email: $('set-email').value, principal_name: $('set-principal').value
+  }).eq('id', profile.school_id);
+  if(error){ handleErr(error); return; }
+  school = { ...school, name:$('set-name').value, motto:$('set-motto').value, address:$('set-address').value, phone:$('set-phone').value, email:$('set-email').value, principal_name:$('set-principal').value };
+  toast('School information updated');
+}
+
+/* ===================== PWA: install prompt + service worker ===================== */
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  $('install-btn').classList.add('show');
+});
+async function installApp(){
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  $('install-btn').classList.remove('show');
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/service-worker.js').catch(err=>console.warn('Service worker registration failed', err));
+  });
+}
+
+/* ===================== INIT ===================== */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  if(!CONFIGURED){ $('config-warning').style.display='block'; return; }
+  $('config-warning').style.display='none';
+  const { data } = await sb.auth.getSession();
+  if(data.session){
+    session = data.session;
+    await afterLogin();
+  }
+  sb.auth.onAuthStateChange((event, sess)=>{
+    if(event === 'SIGNED_OUT'){
+      session=null; profile=null;
+      $('app').classList.remove('active');
+      $('login-screen').style.display='flex';
+    }
+  });
+});
+</script>
+</body>
+</html>
