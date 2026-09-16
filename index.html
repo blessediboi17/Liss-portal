@@ -71,7 +71,7 @@ a{color:inherit;}
 .login-foot a:hover{color:var(--green-deep); text-decoration:underline;}
 .login-error{background:var(--pink-light); color:var(--pink-deep); border-radius:6px; padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
 .login-error.show{display:block;}
-.config-warning{background:#FFF7E6; border:1px solid #F0C36D; color:#7A5A00; border-radius:6px; padding:10px 12px; font-size:12px; margin-bottom:16px; line-height:1.5;}
+.config-warning{background:#FFF7E6; border:1px solid #F0C36D; color:#7A5A00; border-radius:6px; padding:10px 12px; font-size:12px; margin-bottom:16px; line-height:1.5; display:none;}
 @media (prefers-color-scheme: dark){.config-warning{background:#332a10; border-color:#7a5a00; color:#f0c36d;}}
 
 /* ---------- App shell ---------- */
@@ -278,8 +278,8 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const CONFIGURED = SUPABASE_URL.includes("https://") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
 const sb = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-  
-  /* ===================== ICONS / NAV / ROLES ===================== */
+
+/* ===================== ICONS / NAV / ROLES ===================== */
 const ICONS = {
   dashboard:'<path d="M3 12l9-9 9 9"/><path d="M9 21V12h6v9"/><path d="M5 10v11h14V10"/>',
   students:'<circle cx="12" cy="8" r="3.2"/><path d="M5 21c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/>',
@@ -339,11 +339,11 @@ const DEFAULT_GRADING = [
 ];
 
 /* ===================== APP STATE ===================== */
-let session = null;      // supabase auth session
-let profile = null;      // row from `users`: {id, school_id, role, full_name, ...}
-let school = null;       // row from `schools`
-let schoolSettings = null; // row from `school_settings`
-let currentYear = null;  // current academic_years row
+let session = null;
+let profile = null;
+let school = null;
+let schoolSettings = null;
+let currentYear = null;
 let currentPage = 'dashboard';
 let deferredInstallPrompt = null;
 
@@ -404,8 +404,6 @@ async function doLogout(){
   $('login-screen').style.display='flex';
 }
 async function afterLogin(){
-  // Load this person's profile row (role + school_id) — RLS lets a
-  // user always read their own `users` row.
   const { data: prof, error: profErr } = await sb.from('users').select('*').eq('id', session.user.id).single();
   if(profErr || !prof){
     handleErr(profErr, 'Your account has no school profile yet. Ask an administrator to finish setting up your access.');
@@ -1106,7 +1104,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   if(!CONFIGURED){ $('config-warning').style.display='block'; return; }
   $('config-warning').style.display='none';
   const { data } = await sb.auth.getSession();
-  if(data.session){
+  if(data?.session){
     session = data.session;
     await afterLogin();
   }
