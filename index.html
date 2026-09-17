@@ -71,7 +71,7 @@ a{color:inherit;}
 .login-foot a:hover{color:var(--green-deep); text-decoration:underline;}
 .login-error{background:var(--pink-light); color:var(--pink-deep); border-radius:6px; padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
 .login-error.show{display:block;}
-.config-warning{background:#FFF7E6; border:1px solid #F0C36D; color:#7A5A00; border-radius:6px; padding:10px 12px; font-size:12px; margin-bottom:16px; line-height:1.5; display:none;}
+.config-warning{background:#FFF7E6; border:1px solid #F0C36D; color:#7A5A00; border-radius:6px; padding:10px 12px; font-size:12px; margin-bottom:16px; line-height:1.5;}
 @media (prefers-color-scheme: dark){.config-warning{background:#332a10; border-color:#7a5a00; color:#f0c36d;}}
 
 /* ---------- App shell ---------- */
@@ -99,7 +99,7 @@ a{color:inherit;}
 .install-btn.show{display:flex;}
 
 .main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
-.topbar{display:flex; align-items:center; justify-between:space-between; padding:14px 26px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:5;}
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:14px 26px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:5;}
 .topbar h2{font-family:var(--serif); font-size:19px; margin:0; font-weight:600;}
 .topbar .right{display:flex; align-items:center; gap:14px;}
 .icon-btn{width:34px;height:34px;border-radius:7px; border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted);}
@@ -209,6 +209,23 @@ tbody tr:hover{background:var(--bg);}
 .badge-role{font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:12px; background:var(--green-light); color:var(--green-deep);}
 .note{font-size:12.5px; color:var(--muted); line-height:1.6; background:var(--bg); border:1px dashed var(--border); border-radius:6px; padding:10px 12px;}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#202624;color:#fff;padding:10px 18px;border-radius:7px;font-size:13px;z-index:80;box-shadow:0 6px 20px rgba(0,0,0,0.2);display:none;max-width:90vw;text-align:center;}
+
+/* ---------- Picture frames (logo + avatars) ---------- */
+.logo-mark{position:relative; overflow:hidden;}
+.logo-mark img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;}
+.logo-mark .logo-fallback{position:relative; z-index:1;}
+.avatar-frame{position:relative; border-radius:50%; overflow:hidden; flex-shrink:0; background:var(--pink-light); display:flex; align-items:center; justify-content:center; color:var(--pink-deep); font-weight:700; box-shadow:0 0 0 2px var(--surface), 0 0 0 3px var(--border);}
+.avatar-frame img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;}
+.avatar-frame .avatar-fallback{position:relative; z-index:1;}
+.avatar-frame.clickable{cursor:pointer;}
+.avatar-frame.clickable:hover{box-shadow:0 0 0 2px var(--surface), 0 0 0 3px var(--green);}
+.avatar-frame.sm{width:28px;height:28px;font-size:11px;}
+.avatar-frame.md{width:40px;height:40px;font-size:13px;}
+.avatar-frame.lg{width:88px;height:88px;font-size:26px;}
+.photo-upload-row{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+.photo-upload-row .field{margin:0; flex:1;}
+.rc-photo{width:66px;height:66px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid var(--border);background:var(--bg);}
+.rc-photo img{width:100%;height:100%;object-fit:cover;display:block;}
 </style>
 </head>
 <body>
@@ -216,21 +233,20 @@ tbody tr:hover{background:var(--bg);}
 <!-- ============ LOGIN ============ -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-brand"><div class="mark">L</div><div class="word">LISS<small>Light International School System</small></div></div>
+    <div class="login-brand">
+      <div class="mark logo-mark"><span class="logo-fallback">L</span><img src="/logo.png" alt="" onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'"></div>
+      <div class="word">LISS<small>Light International School System</small></div>
+    </div>
     <h1>Sign in</h1>
     <p class="sub">Enter your school account to continue.</p>
     <div class="config-warning" id="config-warning">
       Add your Supabase project URL and anon key at the top of the script before this will connect to real data — see the CONFIG comment in the page source.
     </div>
     <div class="login-error" id="login-error"></div>
-    <div class="field"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="you@liss.edu.lr" autocomplete="username"></div>
+    <div class="field"><label for="li-user">Username</label><input id="li-user" type="text" placeholder="e.g. LISS001" autocomplete="username" autocapitalize="none"></div>
     <div class="field"><label for="li-pass">Password</label><input id="li-pass" type="password" placeholder="Password" autocomplete="current-password"></div>
     <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Sign in</button>
-    
-    <!-- Temporary Sign Up Button -->
-    <button class="btn btn-ghost" id="signup-btn" onclick="doSignUp()" style="width: 100%; margin-top: 10px;">Create Account First</button>
-
-    <div class="login-foot"><a onclick="doForgotPassword()">Forgot password?</a></div>
+    <div class="login-foot"><a onclick="toast('Ask your administrator to reset your password from Users.')">Forgot password?</a></div>
   </div>
 </div>
 
@@ -238,11 +254,11 @@ tbody tr:hover{background:var(--bg);}
 <div id="app">
   <div class="scrim" id="scrim" onclick="toggleSidebar(false)"></div>
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand"><div class="mark">L</div><div class="word">LISS</div></div>
+    <div class="sidebar-brand"><div class="mark logo-mark"><span class="logo-fallback">L</span><img src="/logo.png" alt="" onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'"></div><div class="word">LISS</div></div>
     <nav id="nav-content"></nav>
     <div class="sidebar-foot">
       <div class="who">
-        <div class="av" id="who-av">·</div>
+        <div id="who-avatar-wrap"></div>
         <div class="meta"><div class="name" id="who-name">—</div><div class="role" id="who-role">—</div></div>
       </div>
       <button class="install-btn" id="install-btn" onclick="installApp()">
@@ -275,13 +291,31 @@ tbody tr:hover{background:var(--bg);}
 
 <script>
 /* =====================================================================
-   CONFIG — Supabase Configuration
+   CONFIG — replace with your project's values from
+   Supabase Dashboard → Settings → API. The anon/public key is safe to
+   ship in client code; Row Level Security (see 02_rls_policies.sql)
+   is what actually protects the data.
    ===================================================================== */
 const SUPABASE_URL = "https://jagvcumigbjxxhgcrada.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ3ZjdW1pZ2JqeHhoZ2NyYWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDM5NzgsImV4cCI6MjEwNTExOTk3OH0.utCKuvaHnbyr8uYIvsn_UDTo4Ju0Msau-MlOAPoyXDI";
+// The service role key is NOT used here and must never appear in this
+// file or any other browser-side code — see the note in README.md
+// under "Where the service role key goes". It only belongs inside the
+// admin-users Edge Function, where Supabase injects it automatically.
 
-const CONFIGURED = SUPABASE_URL.includes("https://") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
+const CONFIGURED = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
 const sb = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/*
+  LISS logs people in with a USERNAME, not an email. Supabase Auth is
+  email-based under the hood, so every username is mapped to a fixed
+  internal address at this domain (never actually emailed, never
+  shown to the user) — e.g. "LISS001" -> "liss001@liss.local".
+  See 04_username_login.sql for how to seed the first admin account
+  (username LISS001 / password LISS001) using this same mapping.
+*/
+const USERNAME_DOMAIN = 'liss.local';
+function usernameToEmail(u){ return `${u.trim().toLowerCase()}@${USERNAME_DOMAIN}`; }
 
 /* ===================== ICONS / NAV / ROLES ===================== */
 const ICONS = {
@@ -343,11 +377,11 @@ const DEFAULT_GRADING = [
 ];
 
 /* ===================== APP STATE ===================== */
-let session = null;
-let profile = null;
-let school = null;
-let schoolSettings = null;
-let currentYear = null;
+let session = null;      // supabase auth session
+let profile = null;      // row from `users`: {id, school_id, role, full_name, ...}
+let school = null;       // row from `schools`
+let schoolSettings = null; // row from `school_settings`
+let currentYear = null;  // current academic_years row
 let currentPage = 'dashboard';
 let deferredInstallPrompt = null;
 
@@ -375,57 +409,46 @@ function gradeFor(score){ for(const g of grading()){ if(score>=g.min && score<=g
 function round1(n){ return Math.round(n*10)/10; }
 function avg(arr){ const v=arr.filter(x=>typeof x==='number'); if(!v.length) return null; return v.reduce((a,b)=>a+b,0)/v.length; }
 function fullName(s){ return [s.first_name, s.last_name].filter(Boolean).join(' '); }
+function initialsOf(name){ return (name||'?').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function avatarHtml(url, name, size, extraClass, onclick){
+  const initials = initialsOf(name);
+  const clickAttr = onclick ? ` onclick="${onclick}"` : '';
+  const cls = `avatar-frame ${size||'md'} ${onclick?'clickable':''} ${extraClass||''}`;
+  if(url){
+    return `<div class="${cls}"${clickAttr}><span class="avatar-fallback">${initials}</span><img src="${url}" alt="" onerror="this.remove()"></div>`;
+  }
+  return `<div class="${cls}"${clickAttr}><span class="avatar-fallback">${initials}</span></div>`;
+}
+// Uploads a photo to the shared `media` Storage bucket (see
+// 05_storage.sql for the bucket + its policies) and returns a public
+// URL. folder is 'avatars' | 'students' | 'teachers'; id is the row's
+// own id, so each subject has exactly one photo at a stable path.
+async function uploadPhoto(file, folder, id){
+  if(!file) return null;
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${folder}/${id}/photo.${ext}`;
+  const { error } = await sb.storage.from('media').upload(path, file, { upsert: true, cacheControl: '3600' });
+  if(error) throw error;
+  const { data } = sb.storage.from('media').getPublicUrl(path);
+  return data.publicUrl + '?t=' + Date.now(); // bust cache so a re-upload shows immediately
+}
 function loadingHtml(){ return `<div class="loading"><div class="spinner"></div><div>Loading…</div></div>`; }
 function emptyHtml(icon, text){ return `<div class="empty">${ic(icon)}<div>${text}</div></div>`; }
 
 /* ===================== AUTH ===================== */
-async function doSignUp(){
-  if(!CONFIGURED){ toast('Add your Supabase URL and anon key first.'); return; }
-  const email = $('li-email').value.trim();
-  const password = $('li-pass').value;
-  const errBox = $('login-error');
-  errBox.classList.remove('show');
-  
-  if(!email || !password){ 
-    errBox.textContent = 'Enter email and password above to create account.'; 
-    errBox.classList.add('show'); 
-    return; 
-  }
-  
-  const btn = $('signup-btn'); btn.disabled = true; btn.textContent = 'Creating account…';
-  const { data, error } = await sb.auth.signUp({ email, password });
-  btn.disabled = false; btn.textContent = 'Create Account First';
-  
-  if(error){ 
-    errBox.textContent = error.message; 
-    errBox.classList.add('show'); 
-    return; 
-  }
-  
-  alert('Account created successfully! Click "Sign in" to log in.');
-}
-
 async function doLogin(){
   if(!CONFIGURED){ toast('Add your Supabase URL and anon key first — see CONFIG at the top of the script.'); return; }
-  const email = $('li-email').value.trim();
+  const username = $('li-user').value.trim();
   const password = $('li-pass').value;
   const errBox = $('login-error');
   errBox.classList.remove('show');
-  if(!email || !password){ errBox.textContent = 'Enter your email and password.'; errBox.classList.add('show'); return; }
+  if(!username || !password){ errBox.textContent = 'Enter your username and password.'; errBox.classList.add('show'); return; }
   const btn = $('login-btn'); btn.disabled = true; btn.textContent = 'Signing in…';
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({ email: usernameToEmail(username), password });
   btn.disabled = false; btn.textContent = 'Sign in';
-  if(error){ errBox.textContent = error.message; errBox.classList.add('show'); return; }
+  if(error){ errBox.textContent = 'Incorrect username or password.'; errBox.classList.add('show'); return; }
   session = data.session;
   await afterLogin();
-}
-async function doForgotPassword(){
-  if(!CONFIGURED){ toast('Add your Supabase URL and anon key first.'); return; }
-  const email = $('li-email').value.trim();
-  if(!email){ toast('Enter your email above first.'); return; }
-  const { error } = await sb.auth.resetPasswordForEmail(email);
-  if(error){ handleErr(error); return; }
-  toast('Password reset email sent.');
 }
 async function doLogout(){
   if(sb) await sb.auth.signOut();
@@ -434,7 +457,9 @@ async function doLogout(){
   $('login-screen').style.display='flex';
 }
 async function afterLogin(){
-  const { data: prof, error: profErr } = await sb.from('users').select('*').eq('id', session.user.id).maybeSingle();
+  // Load this person's profile row (role + school_id) — RLS lets a
+  // user always read their own `users` row.
+  const { data: prof, error: profErr } = await sb.from('users').select('*').eq('id', session.user.id).single();
   if(profErr || !prof){
     handleErr(profErr, 'Your account has no school profile yet. Ask an administrator to finish setting up your access.');
     await sb.auth.signOut();
@@ -442,9 +467,9 @@ async function afterLogin(){
   }
   profile = prof;
   const [{ data: sc }, { data: settings }, { data: year }] = await Promise.all([
-    sb.from('schools').select('*').eq('id', profile.school_id).maybeSingle(),
-    sb.from('school_settings').select('*').eq('school_id', profile.school_id).maybeSingle(),
-    sb.from('academic_years').select('*').eq('school_id', profile.school_id).eq('is_current', true).maybeSingle()
+    sb.from('schools').select('*').eq('id', profile.school_id).single(),
+    sb.from('school_settings').select('*').eq('school_id', profile.school_id).single(),
+    sb.from('academic_years').select('*').eq('school_id', profile.school_id).eq('is_current', true).single()
   ]);
   school = sc || null;
   schoolSettings = settings || null;
@@ -453,6 +478,36 @@ async function afterLogin(){
   $('login-screen').style.display='none';
   $('app').classList.add('active');
   route('dashboard');
+}
+
+/* ===================== MY PROFILE (avatar upload) ===================== */
+function openMyProfile(){
+  openModal('My profile', `
+    <div class="photo-upload-row">
+      <div id="my-profile-avatar">${avatarHtml(profile.avatar_url, profile.full_name, 'lg')}</div>
+      <div class="field"><label>Profile photo</label><input type="file" id="my-photo-file" accept="image/*"></div>
+    </div>
+    <div class="grid2">
+      <div><div style="font-size:12px;color:var(--muted);font-weight:600;">Name</div><div style="font-weight:700;">${profile.full_name}</div></div>
+      <div><div style="font-size:12px;color:var(--muted);font-weight:600;">Role</div><div style="font-weight:700;">${ROLE_LABELS[profile.role]||profile.role}</div></div>
+      <div><div style="font-size:12px;color:var(--muted);font-weight:600;">Username</div><div style="font-weight:700;">${profile.username||'—'}</div></div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Close</button><button class="btn btn-primary" id="save-avatar-btn" onclick="saveMyProfilePhoto()">Save photo</button>`);
+}
+async function saveMyProfilePhoto(){
+  const file = $('my-photo-file').files[0];
+  if(!file){ toast('Choose a photo first'); return; }
+  const btn = $('save-avatar-btn'); btn.disabled = true; btn.textContent = 'Uploading…';
+  try{
+    const url = await uploadPhoto(file, 'avatars', profile.id);
+    const { error } = await sb.from('users').update({ avatar_url: url }).eq('id', profile.id);
+    if(error) throw error;
+    profile.avatar_url = url;
+    renderNav();
+    $('my-profile-avatar').innerHTML = avatarHtml(url, profile.full_name, 'lg');
+    toast('Profile photo updated');
+  }catch(err){ handleErr(err); }
+  finally{ btn.disabled = false; btn.textContent = 'Save photo'; }
 }
 
 /* ===================== SHELL / ROUTING ===================== */
@@ -494,9 +549,9 @@ function renderNav(){
     html += `</div>`;
   });
   $('nav-content').innerHTML = html;
+  $('who-avatar-wrap').innerHTML = avatarHtml(profile.avatar_url, profile.full_name, 'md', '', 'openMyProfile()');
   $('who-name').textContent = profile.full_name;
   $('who-role').textContent = ROLE_LABELS[profile.role] || profile.role;
-  $('who-av').textContent = (profile.full_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('');
 }
 
 /* ===================== DASHBOARD ===================== */
@@ -580,9 +635,10 @@ async function renderStudentTable(){
   const list = (data||[]).filter(s=> !q || fullName(s).toLowerCase().includes(q) || (s.student_no||'').toLowerCase().includes(q));
   if(!list.length){ wrap.innerHTML = emptyHtml('students','No students match your search.'); return; }
   wrap.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Photo</th><th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>Status</th><th></th></tr></thead>
     <tbody>${list.map(s=>`
       <tr>
+        <td>${avatarHtml(s.photo_url, fullName(s), 'sm')}</td>
         <td>${s.student_no}</td><td>${fullName(s)}</td><td>${s.classes?.name||'—'}</td><td>${s.gender||'—'}</td>
         <td><span class="pill ${s.status==='active'?'green':'gray'}">${s.status}</span></td>
         <td><div class="row-actions">
@@ -601,6 +657,10 @@ async function nextStudentNo(){
 async function openAddStudent(){
   const classes = await getClasses();
   openModal('Add student', `
+    <div class="photo-upload-row">
+      <div id="add-stu-avatar">${avatarHtml(null,'',  'lg')}</div>
+      <div class="field"><label>Photo (optional)</label><input type="file" id="f-photo" accept="image/*"></div>
+    </div>
     <div class="grid2">
       <div class="field"><label>First name</label><input id="f-first"></div>
       <div class="field"><label>Last name</label><input id="f-last"></div>
@@ -616,33 +676,52 @@ async function saveNewStudent(){
   if(!first || !last){ toast('Enter first and last name'); return; }
   const btn = $('save-stu-btn'); btn.disabled = true;
   const student_no = await nextStudentNo();
-  const { error } = await sb.from('students').insert({
+  const { data: inserted, error } = await sb.from('students').insert({
     school_id: profile.school_id, student_no, first_name:first, last_name:last,
     gender: $('f-gender').value, dob: $('f-dob').value || null,
     class_id: $('f-class').value || null, status: $('f-status').value
-  });
+  }).select().single();
+  if(error){ handleErr(error); btn.disabled = false; return; }
+  const photoFile = $('f-photo').files[0];
+  if(photoFile){
+    try{
+      const url = await uploadPhoto(photoFile, 'students', inserted.id);
+      await sb.from('students').update({ photo_url: url }).eq('id', inserted.id);
+    }catch(err){ handleErr(err, 'Student saved, but the photo upload failed'); }
+  }
   btn.disabled = false;
-  if(error){ handleErr(error); return; }
   closeModal(); await renderStudentTable(); toast('Student added');
 }
 async function openEditStudent(id){
   const classes = await getClasses();
-  const { data: s, error } = await sb.from('students').select('*').eq('id',id).maybeSingle();
-  if(error || !s){ handleErr(error, 'Student not found'); return; }
+  const { data: s, error } = await sb.from('students').select('*').eq('id',id).single();
+  if(error){ handleErr(error); return; }
   openModal('Edit student', `
+    <div class="photo-upload-row">
+      <div id="edit-stu-avatar">${avatarHtml(s.photo_url, fullName(s), 'lg')}</div>
+      <div class="field"><label>Photo</label><input type="file" id="f-photo" accept="image/*"></div>
+    </div>
     <div class="grid2">
       <div class="field"><label>First name</label><input id="f-first" value="${s.first_name}"></div>
       <div class="field"><label>Last name</label><input id="f-last" value="${s.last_name}"></div>
       <div class="field"><label>Class</label><select id="f-class">${classes.map(c=>`<option value="${c.id}" ${c.id===s.class_id?'selected':''}>${c.name}</option>`).join('')}</select></div>
       <div class="field"><label>Status</label><select id="f-status"><option value="active" ${s.status==='active'?'selected':''}>Active</option><option value="inactive" ${s.status==='inactive'?'selected':''}>Inactive</option></select></div>
     </div>`,
-    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditStudent('${id}')">Save changes</button>`);
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="save-stu-btn" onclick="saveEditStudent('${id}')">Save changes</button>`);
 }
 async function saveEditStudent(id){
+  const btn = $('save-stu-btn'); btn.disabled = true;
+  const photoFile = $('f-photo').files[0];
+  let photoUpdate = {};
+  if(photoFile){
+    try{ photoUpdate.photo_url = await uploadPhoto(photoFile, 'students', id); }
+    catch(err){ handleErr(err, 'Photo upload failed — other changes were still saved'); }
+  }
   const { error } = await sb.from('students').update({
     first_name: $('f-first').value.trim(), last_name: $('f-last').value.trim(),
-    class_id: $('f-class').value, status: $('f-status').value
+    class_id: $('f-class').value, status: $('f-status').value, ...photoUpdate
   }).eq('id', id);
+  btn.disabled = false;
   if(error){ handleErr(error); return; }
   closeModal(); await renderStudentTable(); toast('Student updated');
 }
@@ -659,11 +738,43 @@ async function pageTeachers(){
   if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('teachers','Could not load teachers.'); return; }
   $('page-content').innerHTML = `
     <div class="toolbar"><div></div><div></div></div>
-    <div class="note" style="margin-bottom:14px;">New teacher accounts are created via Supabase Auth (invite/admin API) by an administrator, then linked here — that step isn't exposed in this client for security reasons.</div>
+    <div class="note" style="margin-bottom:14px;">To add a teacher with sign-in access, go to Users → Add user and choose role "Teacher" — their teacher profile is created automatically.</div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
-      <tbody>${(data||[]).map(t=>`<tr><td>${t.users?.full_name||'—'}</td><td>${t.users?.email||'—'}</td><td>${t.users?.phone||'—'}</td><td><span class="pill green">${t.employment_status}</span></td></tr>`).join('')||`<tr><td colspan="4" style="text-align:center;color:var(--muted);">No teachers yet</td></tr>`}</tbody>
+      <thead><tr><th>Photo</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+      <tbody>${(data||[]).map(t=>`<tr>
+        <td>${avatarHtml(t.photo_url, t.users?.full_name, 'sm')}</td>
+        <td>${t.users?.full_name||'—'}</td><td>${t.users?.email||'—'}</td><td>${t.users?.phone||'—'}</td>
+        <td><span class="pill green">${t.employment_status}</span></td>
+        <td><button class="mini-btn" title="Edit" onclick='openEditTeacher(${JSON.stringify(t.id)}, ${JSON.stringify(t.users?.full_name||"")}, ${JSON.stringify(t.photo_url||"")}, ${JSON.stringify(t.employment_status)})'>${ic('edit')}</button></td>
+      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted);">No teachers yet</td></tr>`}</tbody>
     </table></div>`;
+}
+function openEditTeacher(id, name, photoUrl, status){
+  openModal(`Edit teacher — ${name}`, `
+    <div class="photo-upload-row">
+      <div id="edit-teacher-avatar">${avatarHtml(photoUrl, name, 'lg')}</div>
+      <div class="field"><label>Photo</label><input type="file" id="t-photo" accept="image/*"></div>
+    </div>
+    <div class="field"><label>Employment status</label><select id="t-status">
+      <option value="active" ${status==='active'?'selected':''}>Active</option>
+      <option value="on_leave" ${status==='on_leave'?'selected':''}>On leave</option>
+      <option value="inactive" ${status==='inactive'?'selected':''}>Inactive</option>
+      <option value="terminated" ${status==='terminated'?'selected':''}>Terminated</option>
+    </select></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="save-teacher-btn" onclick="saveEditTeacher('${id}')">Save changes</button>`);
+}
+async function saveEditTeacher(id){
+  const btn = $('save-teacher-btn'); btn.disabled = true;
+  const photoFile = $('t-photo').files[0];
+  let photoUpdate = {};
+  if(photoFile){
+    try{ photoUpdate.photo_url = await uploadPhoto(photoFile, 'teachers', id); }
+    catch(err){ handleErr(err, 'Photo upload failed — other changes were still saved'); }
+  }
+  const { error } = await sb.from('teachers').update({ employment_status: $('t-status').value, ...photoUpdate }).eq('id', id);
+  btn.disabled = false;
+  if(error){ handleErr(error); return; }
+  closeModal(); await pageTeachers(); toast('Teacher updated');
 }
 
 /* ===================== CLASSES ===================== */
@@ -856,8 +967,8 @@ function filterRCList(){
 }
 async function pageReportCard(studentId){
   if(!studentId){ route('reportcards'); return; }
-  const { data: s, error } = await sb.from('students').select('*, classes(id,name)').eq('id', studentId).maybeSingle();
-  if(error || !s){ handleErr(error, 'Student record not found'); $('page-content').innerHTML = emptyHtml('reports','Could not load this student.'); return; }
+  const { data: s, error } = await sb.from('students').select('*, classes(id,name)').eq('id', studentId).single();
+  if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('reports','Could not load this student.'); return; }
   const { data: classSubjects } = await sb.from('class_subjects').select('subject_id, subjects(name)').eq('class_id', s.class_id);
   const { data: scores } = await sb.from('scores').select('*, periods(name, kind, order_index, semesters(order_index))').eq('student_id', studentId);
 
@@ -890,8 +1001,9 @@ async function pageReportCard(studentId){
   $('page-content').innerHTML = `
   <div class="rc-wrap"><div id="print-area"><div class="rc-doc">
     <div class="rc-head">
-      <div class="mark">${(school?.name||'LISS').split(' ').map(w=>w[0]).slice(0,3).join('')}</div>
+      <div class="mark logo-mark"><span class="logo-fallback">${(school?.name||'LISS').split(' ').map(w=>w[0]).slice(0,3).join('')}</span><img src="/logo.png" alt="" onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'"></div>
       <div><h1>${school?.name||'—'}</h1><p>${school?.address||''} · ${school?.phone||''} · ${school?.email||''}</p></div>
+      ${s.photo_url ? `<div class="rc-photo" style="margin-left:auto;"><img src="${s.photo_url}" alt=""></div>` : ''}
     </div>
     <p class="rc-title">Student Report Card — ${currentYear?currentYear.name:''}</p>
     <div class="rc-meta">
@@ -1013,13 +1125,11 @@ async function saveNewPayment(){
   const amt = Number($('p-amount').value);
   if(!amt || amt<=0){ toast('Enter a valid amount'); return; }
   const btn = $('save-pay-btn'); btn.disabled = true;
-  const { data: paymentList, error } = await sb.from('payments').insert({
+  const { data: payment, error } = await sb.from('payments').insert({
     school_id: profile.school_id, student_id: $('p-student').value, fee_structure_id: $('p-type').value,
     amount: amt, payment_date: new Date().toISOString().slice(0,10), recorded_by: profile.id
-  }).select();
-  
-  if(error || !paymentList || !paymentList.length){ handleErr(error, 'Could not record payment'); btn.disabled=false; return; }
-  const payment = paymentList[0];
+  }).select().single();
+  if(error){ handleErr(error); btn.disabled=false; return; }
   const receipt_no = 'RCT-' + Date.now().toString().slice(-8);
   const { error: rErr } = await sb.from('receipts').insert({ payment_id: payment.id, receipt_no });
   if(rErr) handleErr(rErr);
@@ -1065,16 +1175,90 @@ async function saveAnnouncement(){
 }
 
 /* ===================== USERS ===================== */
+// Calls the `admin-users` Edge Function (see edge-functions/admin-users)
+// which runs with the service-role key server-side — the only place
+// new logins can legitimately be created. The function re-checks that
+// the caller is an admin before doing anything.
+async function callAdminUsers(action, payload){
+  const { data, error } = await sb.functions.invoke('admin-users', { body: { action, ...payload } });
+  if(error){ throw error; }
+  if(data && data.error){ throw new Error(data.error); }
+  return data;
+}
 async function pageUsers(){
-  const { data, error } = await sb.from('users').select('*').eq('school_id',profile.school_id).order('full_name');
+  const [{ data, error }, { data: unlinkedStudents }] = await Promise.all([
+    sb.from('users').select('*').eq('school_id',profile.school_id).order('full_name'),
+    sb.from('students').select('id, first_name, last_name, student_no').eq('school_id',profile.school_id).is('user_id', null).order('last_name')
+  ]);
   if(error){ handleErr(error); $('page-content').innerHTML = emptyHtml('users','Could not load users.'); return; }
+  window._unlinkedStudents = unlinkedStudents || [];
   $('page-content').innerHTML = `
-    <div class="toolbar"><div></div><div></div></div>
-    <div class="note" style="margin-bottom:14px;">New accounts are created via Supabase Auth (invite/admin API) — the anon-key client used here cannot create logins, only manage roles/status for people who already have one.</div>
+    <div class="toolbar"><div></div><button class="btn btn-primary" onclick="openAddUser()">${ic('add')} Add user</button></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
-      <tbody>${(data||[]).map(u=>`<tr><td>${u.full_name}</td><td>${u.email||'—'}</td><td><span class="badge-role">${ROLE_LABELS[u.role]||u.role}</span></td><td><span class="pill green">${u.status}</span></td></tr>`).join('')}</tbody>
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th></th></tr></thead>
+      <tbody>${(data||[]).map(u=>`<tr>
+        <td>${u.full_name}</td><td>${u.username||'—'}</td>
+        <td><span class="badge-role">${ROLE_LABELS[u.role]||u.role}</span></td>
+        <td><span class="pill ${u.status==='active'?'green':'gray'}">${u.status}</span></td>
+        <td><div class="row-actions">
+          <button class="mini-btn" title="Reset password" onclick="openResetPassword('${u.id}','${u.full_name.replace(/'/g,"\\'")}')">${ic('edit')}</button>
+        </div></td>
+      </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--muted);">No users yet</td></tr>`}</tbody>
     </table></div>`;
+}
+function openAddUser(){
+  const studentOptions = window._unlinkedStudents.map(s=>`<option value="${s.id}">${fullName(s)} — ${s.student_no}</option>`).join('');
+  openModal('Add user', `
+    <div class="grid2">
+      <div class="field"><label>Full name</label><input id="u-name"></div>
+      <div class="field"><label>Role</label><select id="u-role" onchange="document.getElementById('u-student-wrap').style.display=this.value==='student'?'block':'none'">
+        <option value="teacher">Teacher</option><option value="parent">Parent</option><option value="accountant">Accountant</option><option value="admin">Administrator</option><option value="student">Student</option>
+      </select></div>
+      <div class="field"><label>Username</label><input id="u-username" placeholder="e.g. jdoe or STU-2601"></div>
+      <div class="field"><label>Temporary password</label><input id="u-password" placeholder="min. 6 characters"></div>
+      <div class="field"><label>Phone (optional)</label><input id="u-phone"></div>
+      <div class="field"><label>Contact email (optional)</label><input id="u-email" type="email"></div>
+    </div>
+    <div class="field" id="u-student-wrap" style="display:none;"><label>Link to existing student record</label>
+      <select id="u-student"><option value="">— none —</option>${studentOptions}</select>
+    </div>
+    <div class="note">The person signs in with this username and password — no real email is required. Share the temporary password with them directly; they can ask an admin to reset it later.</div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="save-user-btn" onclick="saveNewUser()">Create account</button>`);
+}
+async function saveNewUser(){
+  const full_name = $('u-name').value.trim();
+  const username = $('u-username').value.trim();
+  const password = $('u-password').value;
+  const role = $('u-role').value;
+  if(!full_name || !username || !password){ toast('Fill in name, username and password'); return; }
+  if(password.length < 6){ toast('Password must be at least 6 characters'); return; }
+  const btn = $('save-user-btn'); btn.disabled = true; btn.textContent = 'Creating…';
+  try{
+    await callAdminUsers('create', {
+      full_name, username, password, role,
+      phone: $('u-phone').value.trim() || null,
+      email: $('u-email').value.trim() || null,
+      student_id: role==='student' ? ($('u-student').value || null) : null
+    });
+    closeModal(); await pageUsers(); toast('Account created');
+  }catch(err){ handleErr(err); }
+  finally{ btn.disabled = false; btn.textContent = 'Create account'; }
+}
+function openResetPassword(userId, name){
+  openModal(`Reset password — ${name}`, `
+    <div class="field"><label>New temporary password</label><input id="rp-password" placeholder="min. 6 characters"></div>
+    <div class="note">Share this with them directly — there's no email reset link since accounts sign in by username.</div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="rp-btn" onclick="saveResetPassword('${userId}')">Set password</button>`);
+}
+async function saveResetPassword(userId){
+  const password = $('rp-password').value;
+  if(!password || password.length < 6){ toast('Password must be at least 6 characters'); return; }
+  const btn = $('rp-btn'); btn.disabled = true;
+  try{
+    await callAdminUsers('reset_password', { user_id: userId, password });
+    closeModal(); toast('Password updated');
+  }catch(err){ handleErr(err); }
+  finally{ btn.disabled = false; }
 }
 
 /* ===================== SETTINGS ===================== */
@@ -1136,7 +1320,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   if(!CONFIGURED){ $('config-warning').style.display='block'; return; }
   $('config-warning').style.display='none';
   const { data } = await sb.auth.getSession();
-  if(data?.session){
+  if(data.session){
     session = data.session;
     await afterLogin();
   }
